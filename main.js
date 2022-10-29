@@ -5,6 +5,26 @@ var additionalDeails = {};
 var additionalDeailsCall = {};
 
 
+var commonColDef = [
+
+	{
+		target: 0,
+		visible: false,
+	},
+
+	{
+		target: 1,
+		visible: false,
+	},
+	{
+		target: 2,
+		visible: false,
+	},
+	{
+		target: 3,
+		visible: false,
+	}
+];
 var columnsForCall = [
 	{ title: 'Date (Days to expire)' },
 	{ title: 'Difference' },
@@ -94,78 +114,10 @@ $.fn.dataTable.ext.search.push(
 	}
 );
 
+
 function populateRow(option, diff) {
 
-	sal_range = $("#val_range_salary");
-	tv_range = $("#val_range_tv");
-	itm_range = $("#val_range_itm");
-	val_range = $("#val_range");
-	var live_range_val = $("#live_range_val");
-	var val_range_salary = $("#live_range_val_salary");
-	var val_range_tv = $("#live_range_val_tv");
-	var val_range_itm = $("#live_range_val_itm");
-	// EXPIRY SLIDER
-
-	val_range.slider({
-		range: true,
-		min: 1,
-		max: 500,
-		value: 90,
-		step: 1,
-		values: [1, 500],
-		slide: function(event, ui) {
-			live_range_val.val(ui.values[0] + " - " + ui.values[1]);
-		},
-		stop: function(event, ui) {
-			tableForPut.draw();
-		}
-	});
-	sal_range.slider({
-		range: true,
-		min: -100,
-		max: 100,
-		step: .1,
-		values: [-100, 25],
-		slide: function(event, ui) {
-			val_range_salary.val(ui.values[0] + " - " + ui.values[1]);
-		},
-		stop: function(event, ui) {
-			tableForPut.draw();
-		}
-	});
-
-	tv_range.slider({
-		range: true,
-		min: 0,
-		max: 100,
-		step: .1,
-		values: [0, 100],
-		slide: function(event, ui) {
-			val_range_tv.val(ui.values[0] + " - " + ui.values[1]);
-		},
-		stop: function(event, ui) {
-			tableForPut.draw();
-		}
-	});
-
-	itm_range.slider({
-		range: true,
-		min: 0,
-		max: 100,
-		step: .1,
-		values: [0, 100],
-		slide: function(event, ui) {
-			val_range_itm.val(ui.values[0] + " - " + ui.values[1]);
-		},
-		stop: function(event, ui) {
-			tableForPut.draw();
-		}
-	});
-	live_range_val.val(val_range.slider("values", 0) + " - " + val_range.slider("values", 1));
-	val_range_salary.val(sal_range.slider("values", 0) + " - " + sal_range.slider("values", 1));
-	val_range_tv.val(tv_range.slider("values", 0) + " - " + tv_range.slider("values", 1));
-	val_range_itm.val(itm_range.slider("values", 0) + " - " + itm_range.slider("values", 1));
-
+	
 
 
 
@@ -220,7 +172,7 @@ function populateRow(option, diff) {
 	} else {
 
 		//{ title: 'Total Cost' },
-		row.push('$' + parseFloat(100 * (purchasePrice + option.last)).toFixed(0) + ' (' + 100 * purchasePrice + '+' + (100 * option.last).toFixed(0) + ')');
+		row.push('$' + parseFloat(100 * (purchasePrice + option.last)).toFixed(0) + ' (' + (100 * purchasePrice).toFixed(0) + '+' + (100 * option.last).toFixed(0) + ')');
 
 
 		//{ title: '$/% Risk' },
@@ -233,8 +185,12 @@ function populateRow(option, diff) {
 	return row;
 }
 
+
 function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPassed, additionalDeailsKey, optionType, modalId) {
+
+
 	$('.myslider').show();
+
 	$(tableId + ' tbody').off('click');
 
 	if (optionType == 'CALL') {
@@ -259,6 +215,78 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 	];
 
 
+
+sal_range = $("#val_range_salary");
+	tv_range = $("#val_range_tv");
+	itm_range = $("#val_range_itm");
+	val_range = $("#val_range");
+	var live_range_val = $("#live_range_val");
+	var val_range_salary = $("#live_range_val_salary");
+	var val_range_tv = $("#live_range_val_tv");
+	var val_range_itm = $("#live_range_val_itm");
+	// EXPIRY SLIDER
+
+	val_range.slider({
+		range: true,
+		min: 1,
+		max: 1000,
+		
+		step: 1,
+		values: [90, 360],
+		slide: function(event, ui) {
+			live_range_val.val(ui.values[0] + " - " + ui.values[1]);
+		},
+		stop: function(event, ui) {
+			tableForPut.draw();
+		}
+	});
+	sal_range.slider({
+		range: true,
+		min: -100,
+		max: 100,
+		step: .1,
+		values: [-100, 25],
+		slide: function(event, ui) {
+			val_range_salary.val(ui.values[0] + " - " + ui.values[1]);
+		},
+		stop: function(event, ui) {
+			tableForPut.draw();
+		}
+	});
+
+	tv_range.slider({
+		range: true,
+		min: 0,
+		max: 100,
+		step: .1,
+		values: [0, 50],
+		slide: function(event, ui) {
+			val_range_tv.val(ui.values[0] + " - " + ui.values[1]);
+		},
+		stop: function(event, ui) {
+			tableForPut.draw();
+		}
+	});
+
+	itm_range.slider({
+		range: true,
+		min: 0,
+		max: 100,
+		step: .1,
+		values: [0, 25],
+		slide: function(event, ui) {
+			val_range_itm.val(ui.values[0] + " - " + ui.values[1]);
+		},
+		stop: function(event, ui) {
+			tableForPut.draw();
+		}
+	});
+	live_range_val.val(val_range.slider("values", 0) + " - " + val_range.slider("values", 1));
+	val_range_salary.val(sal_range.slider("values", 0) + " - " + sal_range.slider("values", 1));
+	val_range_tv.val(tv_range.slider("values", 0) + " - " + tv_range.slider("values", 1));
+	val_range_itm.val(itm_range.slider("values", 0) + " - " + itm_range.slider("values", 1));
+
+
 	_.keys(dateWiseOptions).forEach(function(date) {
 
 		var start_date = today;
@@ -276,26 +304,7 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 
 	var groupColumn = 0;
 	tablePassed = $(tableId).DataTable({
-		columnDefs: [
-
-			{
-				target: 0,
-				visible: false,
-			},
-
-			{
-				target: 1,
-				visible: false,
-			},
-			{
-				target: 2,
-				visible: false,
-			},
-			{
-				target: 3,
-				visible: false,
-			}
-		],
+		columnDefs: commonColDef,
 		responsive: {
 			details: {
 				type: 'column',
@@ -377,11 +386,6 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 				{
 					target: 3,
 					visible: false,
-				},
-				,
-				{
-					target: 4,
-					visible: false,
 				}
 			],
 			order: [[groupColumn, 'asc']],
@@ -435,12 +439,19 @@ function populate() {
 
 $(function() {
 
+	$("#slider").slider();
 	$('.myslider').hide();
+	if (localStorage.getItem('access')) {
+		$('#key').hide();
+	}
 
 	$('#form-submit').click(function() {
 
 
-		localStorage.setItem('access', $('#key').val());
+		if (!localStorage.getItem('access') && $('#key').val()) {
+			localStorage.setItem('access', $('#key').val());
+		}
+
 
 
 		sessionStorage.setItem('symbol', $('#symbol').val());
@@ -448,9 +459,6 @@ $(function() {
 		populate();
 	})
 
-	if (sessionStorage.getItem('symbol')) {
 
-		//populate();
-	}
 
 });
