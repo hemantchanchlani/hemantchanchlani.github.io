@@ -113,9 +113,8 @@ p.myslider {
 							<div id="quote" class="card-body"></div>
 						</div>
 
-						<input type="text" class="form-control col-md-6 mr-auto"
-							id="key" aria-describedby="price"
-							placeholder="Enter Your access key">
+						<input type="text" class="form-control col-md-6 mr-auto" id="key"
+							aria-describedby="price" placeholder="Enter Your access key">
 
 
 
@@ -240,9 +239,19 @@ p.myslider {
 	<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
 
 
-	<script src="./jTradier.js"></script>
-	<script src="./optionchain.js"></script>
-	<script src="./main.js"></script>
+	<script>
+		function addScript(src) {
+			var s = document.createElement('script');
+			s.setAttribute('src', src);
+			document.body.appendChild(s);
+		}
+
+		[ "./jTradier.js?" + new Date(), "./optionchain.js?" + new Date(),
+				"./main.js?" + new Date() ].forEach(function(src) {
+			addScript(src);
+		});
+	</script>
+
 
 
 </body>
