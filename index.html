@@ -246,12 +246,16 @@ p.myslider {
 			document.body.appendChild(s);
 		}
 
-		[ "./jTradier.js?" + new Date(), "./optionchain.js?" + new Date(),
-				"./main.js?" + new Date() ].forEach(function(src) {
+		[].forEach(function(src) {
 			addScript(src);
 		});
 	</script>
 
+
+
+	<script src="./jTradier.js"></script>
+	<script src="./optionchain.js"></script>
+	<script src="./main.js"></script>
 
 
 </body>
