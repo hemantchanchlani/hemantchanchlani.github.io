@@ -438,8 +438,8 @@ $(function() {
 		$('#key').hide();
 	}
 
-	$('#form-submit').click(function() {
-
+	$('#form').submit(function(e) {
+		e.preventDefault();
 
 		if (!localStorage.getItem('access') && $('#key').val()) {
 			localStorage.setItem('access', $('#key').val());

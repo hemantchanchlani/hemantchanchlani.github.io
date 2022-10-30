@@ -26,6 +26,82 @@ p.myslider {
 	margin-bottom: 0rem;
 	margin-top: 32px;
 }
+
+.newsletter-subscribe {
+	color: #313437;
+	background-color: #fff;
+	padding: 50px 0;
+}
+
+.newsletter-subscribe p {
+	color: #7d8285;
+	line-height: 1.5;
+}
+
+.newsletter-subscribe h2 {
+	font-size: 24px;
+	font-weight: bold;
+	margin-bottom: 25px;
+	line-height: 1.5;
+	padding-top: 0;
+	margin-top: 0;
+	color: inherit;
+}
+
+.newsletter-subscribe .intro {
+	font-size: 16px;
+	max-width: 500px;
+	margin: 0 auto 25px;
+}
+
+.newsletter-subscribe .intro p {
+	margin-bottom: 35px;
+}
+
+.newsletter-subscribe form {
+	justify-content: center;
+}
+
+.newsletter-subscribe form .form-control {
+	background: #eff1f4;
+	border: none;
+	border-radius: 3px;
+	box-shadow: none;
+	outline: none;
+	color: inherit;
+	text-indent: 9px;
+	height: 45px;
+	margin-right: 10px;
+	min-width: 250px;
+}
+
+.newsletter-subscribe form .btn {
+	padding: 16px 32px;
+	border: none;
+	background: none;
+	box-shadow: none;
+	text-shadow: none;
+	opacity: 0.9;
+	text-transform: uppercase;
+	font-weight: bold;
+	font-size: 13px;
+	letter-spacing: 0.4px;
+	line-height: 1;
+}
+
+.newsletter-subscribe form .btn:hover {
+	opacity: 1;
+}
+
+.newsletter-subscribe form .btn:active {
+	transform: translateY(1px);
+}
+
+.newsletter-subscribe form .btn-primary {
+	background-color: #055ada !important;
+	color: #fff;
+	outline: none !important;
+}
 </style>
 
 <title>Option Chain!</title>
@@ -89,120 +165,120 @@ p.myslider {
 		</div>
 	</div>
 	<!--  end of modal dialog -->
-	<div class="container-fluid">
 
-		<section class="main-section">
-			<div class="row">
-				<form id="login-form" class="col-md-3 m-auto">
-					<div class="form-group">
-						<div class="row g2">
+	<div class="newsletter-subscribe">
+		<div class="container">
+			<div class="intro">
+				<h2 id="symbol-label" class="text-center"></h2>
+				<p class="text-center myslider">
+					Current Price:<span id="lastPrice"></span>
+				</p>
+				<p class="text-center myslider">
+					Purchase Price:<span id="purchasePrice"></span>
+				</p>
+			</div>
+			<form class="form-inline" id="form" method="post">
+				<div class="form-group">
+					<input class="form-control" type="text" id="symbol"
+						placeholder="Your Symbol">
+				</div>
+				<div class="form-group">
+					<input class="form-control" type="text" id="price"
+						placeholder="Your purchase price">
+				</div>
+				<div class="form-group">
+					<input class="form-control" type="text" id="key"
+						placeholder="Access Key">
+				</div>
+				<div class="form-group">
+					<button class="btn btn-primary" type="submit">Get Option
+						Chain</button>
+				</div>
+			</form>
+		</div>
+	</div>
 
 
-							<input type="text" class="form-control col-md-6 mr-auto"
-								id="symbol" aria-describedby="symbol" placeholder="Enter Symbol">
-
-							<input type="text" class="form-control col-md-6 mr-auto"
-								id="price" aria-describedby="price"
-								placeholder="Enter Your price">
-
-
-							<button type="button" id="form-submit" class="btn  btn-dark">Submit</button>
-
-						</div>
-						<div class="card myslider ">
-							<div id="quote" class="card-body"></div>
-						</div>
-
-						<input type="text" class="form-control col-md-6 mr-auto" id="key"
-							aria-describedby="price" placeholder="Enter Your access key">
+	</section>
+	<section class="main-section myslider">
+		<div class="row">
+			<div class="col-md-8 m-auto">
+				<ul class="nav nav-tabs">
+					<li class="nav-item"><a class="nav-link active"
+						aria-current="page" href="#" data-bs-toggle="tab"
+						data-bs-target="#puts">PUTS</a></li>
+					<li class="nav-item"><a class="nav-link" href="#"
+						data-bs-toggle="tab" data-bs-target="#calls">CALLS</a></li>
+				</ul>
+				<div class="tab-content" id="myTabContent">
+					<div id="puts" class="tab-pane fade show active">
 
 
 
+
+						<!-- PUT CONTENT START-->
+						<p class="myslider">
+							<label>Expiry Filter (~ >100) : </label><input type="text"
+								id="live_range_val" readonly
+								style="border: 0; color: #f6931f; font-weight: bold;">
+						</p>
+						<div id="val_range" style="width: 1200px"></div>
+
+
+
+						<p class="myslider">
+							<label>Percentage Loss Filter (Limit to 8%): </label><input
+								type="text" id="live_range_val_salary" readonly
+								style="border: 0; color: #f6931f; font-weight: bold;">
+						</p>
+						<div id="val_range_salary" style="width: 1200px"></div>
+
+
+						<p class="myslider">
+							<label>Time Value Percentage Filter (50% or less) : </label><input
+								type="text" id="live_range_val_tv" readonly
+								style="border: 0; color: #f6931f; font-weight: bold;">
+						</p>
+						<div id="val_range_tv" style="width: 1200px"></div>
+
+
+						<p class="myslider">
+							<label>ITM Percent Filter (~ 20-25%) : </label><input type="text"
+								id="live_range_val_itm" readonly
+								style="border: 0; color: #f6931f; font-weight: bold;">
+						</p>
+						<div id="val_range_itm" style="width: 1200px"></div>
+
+
+
+
+
+
+
+						<table id="datewise-puts"
+							class="display stripe nowrap dataTable dtr-inline collapsed"
+							width="100%"></table>
+
+
+
+						<!-- PUT CONTENT END-->
 					</div>
 
-				</form>
-			</div>
-			<div class="col-md-2 row"></div>
-		</section>
-		<section class="main-section myslider">
-			<div class="row">
-				<div class="col-md-8 m-auto">
-					<ul class="nav nav-tabs">
-						<li class="nav-item"><a class="nav-link active"
-							aria-current="page" href="#" data-bs-toggle="tab"
-							data-bs-target="#puts">PUTS</a></li>
-						<li class="nav-item"><a class="nav-link" href="#"
-							data-bs-toggle="tab" data-bs-target="#calls">CALLS</a></li>
-					</ul>
-					<div class="tab-content" id="myTabContent">
-						<div id="puts" class="tab-pane fade show active">
+					<div id="calls" class="tab-pane fade">
 
 
 
-
-							<!-- PUT CONTENT START-->
-							<p class="myslider">
-								<label>Expiry Filter (~ >100) : </label><input type="text"
-									id="live_range_val" readonly
-									style="border: 0; color: #f6931f; font-weight: bold;">
-							</p>
-							<div id="val_range" style="width: 1200px"></div>
+						<table id="datewise-calls"
+							class="display stripe nowrap dataTable dtr-inline collapsed"
+							width="100%"></table>
 
 
 
-							<p class="myslider">
-								<label>Percentage Loss Filter (Limit to 8%): </label><input
-									type="text" id="live_range_val_salary" readonly
-									style="border: 0; color: #f6931f; font-weight: bold;">
-							</p>
-							<div id="val_range_salary" style="width: 1200px"></div>
-
-
-							<p class="myslider">
-								<label>Time Value Percentage Filter (50% or less) : </label><input
-									type="text" id="live_range_val_tv" readonly
-									style="border: 0; color: #f6931f; font-weight: bold;">
-							</p>
-							<div id="val_range_tv" style="width: 1200px"></div>
-
-
-							<p class="myslider">
-								<label>ITM Percent Filter (~ 20-25%) : </label><input
-									type="text" id="live_range_val_itm" readonly
-									style="border: 0; color: #f6931f; font-weight: bold;">
-							</p>
-							<div id="val_range_itm" style="width: 1200px"></div>
-
-
-
-
-
-
-
-							<table id="datewise-puts"
-								class="display stripe nowrap dataTable dtr-inline collapsed"
-								width="100%"></table>
-
-
-
-							<!-- PUT CONTENT END-->
-						</div>
-
-						<div id="calls" class="tab-pane fade">
-
-
-
-							<table id="datewise-calls"
-								class="display stripe nowrap dataTable dtr-inline collapsed"
-								width="100%"></table>
-
-
-
-						</div>
 					</div>
 				</div>
 			</div>
-	</div>
+		</div>
+		</div>
 	</section>
 	</div>
 	<!-- Optional JavaScript -->
@@ -246,16 +322,12 @@ p.myslider {
 			document.body.appendChild(s);
 		}
 
-		[].forEach(function(src) {
+		[ "./jTradier.js?" + new Date(), "./optionchain.js?" + new Date(),
+				"./main.js?" + new Date() ].forEach(function(src) {
 			addScript(src);
 		});
 	</script>
 
-
-
-	<script src="./jTradier.js"></script>
-	<script src="./optionchain.js"></script>
-	<script src="./main.js"></script>
 
 
 </body>

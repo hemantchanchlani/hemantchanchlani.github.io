@@ -25,7 +25,10 @@ function getOptionChain() {
 
 			purchasePrice = lastPrice;
 		}
-		$('#quote').html('<strong>'+ symbol + '</strong></br> Current : $' + lastPrice + ' </br> Purchase Price : $' + purchasePrice);
+		$('#symbol-label').html(quote.symbol+":"+ quote.description);
+		$('#purchasePrice').html('$'+purchasePrice);
+		$('#lastPrice').html('$'+lastPrice);
+		
 		$.when(t.getOptionExpirations(symbol)).then(function(expiryDates) {
 			var requests = [];
 			var deferreds = [];
