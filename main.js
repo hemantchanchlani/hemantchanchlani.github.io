@@ -25,23 +25,8 @@ var commonColDef = [
 		visible: false,
 	}
 ];
-var columnsForCall = [
-	{ title: 'Date (Days to expire)' },
-	{ title: 'Difference' },
-	{ title: 'Percentage' },
-	{ title: 'Time' },
-	{ title: 'Strike' },
-	{ title: 'ITM Percent' },
-	{ title: 'Premium' },
-	{ title: 'Intrinsic Value' },
-	{ title: 'Time Value' },
-	{ title: '% Time Value' },
-	{ title: 'Guranteed Return' },
 
-
-
-];
-var columnsForPut = [
+var commonColumns = [
 	{ title: 'Date (Days to expire)' },
 	{ title: 'Difference' },
 	{ title: 'Percentage' },
@@ -55,6 +40,7 @@ var columnsForPut = [
 	{ title: 'Total Cost' },
 	{ title: '$/% Risk' },
 	{ title: 'Guranteed Return' },
+	{ title: 'Description' },
 
 
 
@@ -75,7 +61,7 @@ $.fn.dataTable.ext.search.push(
 			(min <= col && col <= max)) {
 			return true;
 		}
-		return false;
+		return data[13].indexOf('Call') > -1 ? true : false;;
 	},
 	function(settings, data, dataIndex) {
 		var min = parseFloat(sal_range.slider("values", 0));
@@ -87,7 +73,7 @@ $.fn.dataTable.ext.search.push(
 			(min <= col && col <= max)) {
 			return true;
 		}
-		return false;
+		return data[13].indexOf('Call') > -1 ? true : false;;
 	},
 	function(settings, data, dataIndex) {
 		var min = parseFloat(tv_range.slider("values", 0));
@@ -99,7 +85,7 @@ $.fn.dataTable.ext.search.push(
 			(min <= col && col <= max)) {
 			return true;
 		}
-		return false;
+		return data[13].indexOf('Call') > -1 ? true : false;;
 	}, function(settings, data, dataIndex) {
 		var min = parseFloat(itm_range.slider("values", 0));
 		var max = parseFloat(itm_range.slider("values", 1));
@@ -110,14 +96,14 @@ $.fn.dataTable.ext.search.push(
 			(min <= col && col <= max)) {
 			return true;
 		}
-		return false;
+		return data[13].indexOf('Call') > -1 ? true : false;;
 	}
 );
 
 
 function populateRow(option, diff) {
 
-	
+
 
 
 
@@ -165,23 +151,18 @@ function populateRow(option, diff) {
 	row.push(parseFloat(100 * (option.timeValue / option.last)).toFixed(2) + "%");
 
 
-	if (option.symbol.slice(6).indexOf('C') > -1) {
-
-		//	{ title: 'Guranteed Return' },
-		row.push('$' + (option.last * 100).toFixed(0));
-	} else {
-
-		//{ title: 'Total Cost' },
-		row.push('$' + parseFloat(100 * (purchasePrice + option.last)).toFixed(0) + ' (' + (100 * purchasePrice).toFixed(0) + '+' + (100 * option.last).toFixed(0) + ')');
+	//{ title: 'Total Cost' },
+	row.push('$' + parseFloat(100 * (purchasePrice + option.last)).toFixed(0) + ' (' + (100 * purchasePrice).toFixed(0) + '+' + (100 * option.last).toFixed(0) + ')');
 
 
-		//{ title: '$/% Risk' },
-		row.push('$' + parseFloat(100 * option.amountLost).toFixed(0) + '/' + option.percentLost + "%");
+	//{ title: '$/% Risk' },
+	row.push('$' + parseFloat(100 * option.amountLost).toFixed(0) + '/' + option.percentLost + "%");
 
-		//{ title: 'Guranteed Return' },
-		row.push('$' + (option.strike * 100));
+	//{ title: 'Guranteed Return' },
+	row.push('$' + (option.strike * 100));
 
-	}
+	//{ title: 'Description' },
+	row.push(option.description);
 	return row;
 }
 
@@ -216,7 +197,7 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 
 
 
-sal_range = $("#val_range_salary");
+	sal_range = $("#val_range_salary");
 	tv_range = $("#val_range_tv");
 	itm_range = $("#val_range_itm");
 	val_range = $("#val_range");
@@ -230,7 +211,7 @@ sal_range = $("#val_range_salary");
 		range: true,
 		min: 1,
 		max: 1000,
-		
+
 		step: 1,
 		values: [90, 360],
 		slide: function(event, ui) {
@@ -386,6 +367,18 @@ sal_range = $("#val_range_salary");
 				{
 					target: 3,
 					visible: false,
+				},
+				{
+					target: 7,
+					visible: false,
+				},
+				{
+					target: 5,
+					visible: false,
+				},
+				{
+					target: 12,
+					visible: false,
 				}
 			],
 			order: [[groupColumn, 'asc']],
@@ -429,8 +422,8 @@ function populate() {
 	let that = this;
 	getOptionChain().then(function(state) {
 
-		populateOptionTab(state.dateWisePuts, today, state.priceWisePuts, '#datewise-puts', columnsForPut, '#additional_details_put', 'PUT', '#addionalDetailsPut');
-		populateOptionTab(state.dateWiseCalls, today, state.priceWiseCalls, '#datewise-calls', columnsForCall, '#additional_details_call', 'CALL', '#addionalDetailsCall');
+		populateOptionTab(state.dateWisePuts, today, state.priceWisePuts, '#datewise-puts', commonColumns, '#additional_details_put', 'PUT', '#addionalDetailsPut');
+		populateOptionTab(state.dateWiseCalls, today, state.priceWiseCalls, '#datewise-calls', commonColumns, '#additional_details_call', 'CALL', '#addionalDetailsCall');
 
 
 
