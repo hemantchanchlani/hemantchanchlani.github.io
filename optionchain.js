@@ -15,6 +15,10 @@ function getOptionChain() {
 
 	symbol = sessionStorage.getItem('symbol');
 	$.when(t.getQuote(symbol)).then(function(q) {
+
+
+
+
 		quote = q.quote;
 		lastPrice = quote.last;
 		if ($('#price').val()) {
@@ -25,10 +29,11 @@ function getOptionChain() {
 
 			purchasePrice = lastPrice;
 		}
-		$('#symbol-label').html(quote.symbol+":"+ quote.description);
-		$('#purchasePrice').html('$'+purchasePrice);
-		$('#lastPrice').html('$'+lastPrice);
-		
+
+		$('#symbol-label').html(quote.symbol + ":" + quote.description);
+		$('#purchasePrice').html('$' + purchasePrice);
+		$('#lastPrice').html('$' + lastPrice);
+		$('.price-info').show();
 		$.when(t.getOptionExpirations(symbol)).then(function(expiryDates) {
 			var requests = [];
 			var deferreds = [];
@@ -112,11 +117,6 @@ function getOptionChain() {
 
 
 							// CALL ends
-
-
-
-
-
 
 
 

@@ -169,10 +169,10 @@ p.myslider {
 		<div class="container">
 			<div class="intro">
 				<h2 id="symbol-label" class="text-center"></h2>
-				<p class="text-center myslider">
+				<p class="text-center price-info">
 					Current Price:<span id="lastPrice"></span>
 				</p>
-				<p class="text-center myslider">
+				<p class="text-center price-info">
 					Purchase Price:<span id="purchasePrice"></span>
 				</p>
 			</div>
@@ -192,14 +192,17 @@ p.myslider {
 				<div class="form-group">
 					<button class="btn btn-primary" type="submit">Get Option
 						Chain</button>
+					<div class="spinner-grow text-primary" id="loading">
+						<span class="visually-hidden">Loading...</span>
+					</div>
 				</div>
 			</form>
 		</div>
 	</div>
 
-
 	</section>
 	<section class="main-section myslider">
+
 		<div class="row">
 			<div class="col-md-8 m-auto">
 				<ul class="nav nav-tabs">

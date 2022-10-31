@@ -135,7 +135,12 @@ function populateRow(option, diff) {
 
 
 	//{ title: 'ITM Percent' },
+
+
+
 	row.push(Math.round(100 * ((option.strike - lastPrice) / lastPrice)));
+
+
 
 
 	//	{ title: 'Premium' },
@@ -170,7 +175,6 @@ function populateRow(option, diff) {
 function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPassed, additionalDeailsKey, optionType, modalId) {
 
 
-	$('.myslider').show();
 
 	$(tableId + ' tbody').off('click');
 
@@ -424,22 +428,26 @@ function populate() {
 
 		populateOptionTab(state.dateWisePuts, today, state.priceWisePuts, '#datewise-puts', commonColumns, '#additional_details_put', 'PUT', '#addionalDetailsPut');
 		populateOptionTab(state.dateWiseCalls, today, state.priceWiseCalls, '#datewise-calls', commonColumns, '#additional_details_call', 'CALL', '#addionalDetailsCall');
-
+		$('#loading').hide();
+		$('.myslider').show();
 
 
 	});
 }
 
 $(function() {
-
+	$('.price-info').hide();
 	$("#slider").slider();
 	$('.myslider').hide();
 	if (localStorage.getItem('access')) {
 		$('#key').hide();
 	}
-
+	$('#loading').hide();
 	$('#form').submit(function(e) {
 		e.preventDefault();
+		$('#loading').show();
+		$('.myslider').hide();
+		$('.price-info').hide();
 
 		if (!localStorage.getItem('access') && $('#key').val()) {
 			localStorage.setItem('access', $('#key').val());
