@@ -19,6 +19,9 @@ var commonColDef = [
 	{
 		target: 2,
 		visible: false,
+	}, {
+		target: 14,
+		visible: false,
 	},
 	{
 		target: 3,
@@ -40,7 +43,8 @@ var commonColumns = [
 	{ title: 'Total Cost' },
 	{ title: '$/% Risk' },
 	{ title: 'Guranteed Return' },
-	{ title: 'Description' },
+	{ title: 'Volume/OI' },
+	{ title: 'Desc' },
 
 
 
@@ -61,7 +65,7 @@ $.fn.dataTable.ext.search.push(
 			(min <= col && col <= max)) {
 			return true;
 		}
-		return data[13].indexOf('Call') > -1 ? true : false;;
+		return data[14].indexOf('Call') > -1 ? true : false;;
 	},
 	function(settings, data, dataIndex) {
 		var min = parseFloat(sal_range.slider("values", 0));
@@ -73,7 +77,7 @@ $.fn.dataTable.ext.search.push(
 			(min <= col && col <= max)) {
 			return true;
 		}
-		return data[13].indexOf('Call') > -1 ? true : false;;
+		return data[14].indexOf('Call') > -1 ? true : false;;
 	},
 	function(settings, data, dataIndex) {
 		var min = parseFloat(tv_range.slider("values", 0));
@@ -85,7 +89,7 @@ $.fn.dataTable.ext.search.push(
 			(min <= col && col <= max)) {
 			return true;
 		}
-		return data[13].indexOf('Call') > -1 ? true : false;;
+		return data[14].indexOf('Call') > -1 ? true : false;;
 	}, function(settings, data, dataIndex) {
 		var min = parseFloat(itm_range.slider("values", 0));
 		var max = parseFloat(itm_range.slider("values", 1));
@@ -96,7 +100,7 @@ $.fn.dataTable.ext.search.push(
 			(min <= col && col <= max)) {
 			return true;
 		}
-		return data[13].indexOf('Call') > -1 ? true : false;;
+		return data[14].indexOf('Call') > -1 ? true : false;;
 	}
 );
 
@@ -166,8 +170,13 @@ function populateRow(option, diff) {
 	//{ title: 'Guranteed Return' },
 	row.push('$' + (option.strike * 100));
 
-	//{ title: 'Description' },
-	row.push(option.description);
+	//{ title: 'volume' },
+	row.push(option.volume + '/' + option.open_interest);
+
+
+	//{ title: 'Desc' },
+	row.push(option.volume + '/' + option.description);
+
 	return row;
 }
 
@@ -290,6 +299,14 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 	var groupColumn = 0;
 	tablePassed = $(tableId).DataTable({
 		columnDefs: commonColDef,
+		"rowCallback": function(row, data) {
+			if (data[4]<lastPrice) {
+				$(row).addClass('red');
+			}else{
+				$(row).addClass('green');
+				
+			}
+		},
 		responsive: {
 			details: {
 				type: 'column',
@@ -382,6 +399,9 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 				},
 				{
 					target: 12,
+					visible: false,
+				}, {
+					target: 14,
 					visible: false,
 				}
 			],
