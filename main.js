@@ -158,7 +158,7 @@ function populateRow(option, diff) {
 
 	//{ title: '% Time Value' },
 	row.push(parseFloat(100 * (option.timeValue / option.last)).toFixed(2) + "%");
-
+ 
 
 	//{ title: 'Total Cost' },
 	row.push('$' + parseFloat(100 * (purchasePrice + option.last)).toFixed(0) + ' (' + (100 * purchasePrice).toFixed(0) + '+' + (100 * option.last).toFixed(0) + ')');
@@ -236,10 +236,10 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 	});
 	sal_range.slider({
 		range: true,
-		min: -100,
+		min: -10,
 		max: 100,
 		step: .1,
-		values: [-100, 25],
+		values: [0, 10],
 		slide: function(event, ui) {
 			val_range_salary.val(ui.values[0] + " - " + ui.values[1]);
 		},
