@@ -35,13 +35,13 @@ var commonColumns = [
 	{ title: 'Percentage' },
 	{ title: 'Time' },
 	{ title: 'Strike' },
-	{ title: 'ITM Percent' },
+	{ title: 'ITM %' },
 	{ title: 'Premium' },
 	{ title: 'Intrinsic Value' },
 	{ title: 'Time Value/Cost per week' },
-	{ title: '% Time Value' },
+	{ title: 'Time Value %' },
 	{ title: 'Total Cost' },
-	{ title: '$/% Risk' },
+	{ title: '$ / % Risk' },
 	{ title: 'Guranteed Return' },
 	{ title: 'Volume/OI' },
 	{ title: 'Desc' },
@@ -154,7 +154,7 @@ function populateRow(option, diff) {
 	row.push('$' + parseFloat(option.intrinsicValue).toFixed(2));
 
 	//{ title: 'Time Value/Cost per week' },
-	row.push('$' + parseFloat(option.timeValue).toFixed(2) +"/" +'cents ' + parseFloat((100*option.timeValue*7)/(diff)).toFixed(2));
+	row.push('$' + parseFloat(option.timeValue).toFixed(2) +"/"  + parseFloat((100*option.timeValue*7)/(diff)).toFixed(2)+" c");
 
 	//{ title: '% Time Value' },
 	row.push(parseFloat(100 * (option.timeValue / option.last)).toFixed(2) + "%");
