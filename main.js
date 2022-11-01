@@ -309,6 +309,7 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 
 			}
 		},
+		
 		responsive: {
 			details: {
 				type: 'column',
