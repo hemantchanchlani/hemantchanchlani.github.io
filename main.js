@@ -65,7 +65,8 @@ $.fn.dataTable.ext.search.push(
 			(min <= col && col <= max)) {
 			return true;
 		}
-		return data[14].indexOf('Call') > -1 ? true : false;;
+		//return data[14].indexOf('Call') > -1 ? true : false;;
+		return false;
 	},
 	function(settings, data, dataIndex) {
 		var min = parseFloat(sal_range.slider("values", 0));
@@ -154,11 +155,11 @@ function populateRow(option, diff) {
 	row.push('$' + parseFloat(option.intrinsicValue).toFixed(2));
 
 	//{ title: 'Time Value/Cost per week' },
-	row.push('$' + parseFloat(option.timeValue).toFixed(2) +"/"  + parseFloat((100*option.timeValue*7)/(diff)).toFixed(2)+" c");
+	row.push('$' + parseFloat(option.timeValue).toFixed(2) + "/" + parseFloat((100 * option.timeValue * 7) / (diff)).toFixed(2) + " c");
 
 	//{ title: '% Time Value' },
 	row.push(parseFloat(100 * (option.timeValue / option.last)).toFixed(2) + "%");
- 
+
 
 	//{ title: 'Total Cost' },
 	row.push('$' + parseFloat(100 * (purchasePrice + option.last)).toFixed(0) + ' (' + (100 * purchasePrice).toFixed(0) + '+' + (100 * option.last).toFixed(0) + ')');
@@ -232,6 +233,7 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 		},
 		stop: function(event, ui) {
 			tableForPut.draw();
+			tableForCall.draw();
 		}
 	});
 	sal_range.slider({
@@ -300,11 +302,11 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 	tablePassed = $(tableId).DataTable({
 		columnDefs: commonColDef,
 		"rowCallback": function(row, data) {
-			if (data[4]<lastPrice) {
+			if (data[4] < lastPrice) {
 				$(row).addClass('red');
-			}else{
+			} else {
 				$(row).addClass('green');
-				
+
 			}
 		},
 		responsive: {
@@ -462,6 +464,19 @@ $(function() {
 	if (localStorage.getItem('access')) {
 		$('#key').hide();
 	}
+
+
+	$('.calltab').click(function() {
+
+		$('.put').hide();
+	});
+
+	$('.puttab').click(function() {
+
+		$('.put').show();
+	});
+
+
 	$('#loading').hide();
 	$('#form').submit(function(e) {
 		e.preventDefault();
