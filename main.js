@@ -38,7 +38,7 @@ var commonColumns = [
 	{ title: 'ITM %' },
 	{ title: 'Premium' },
 	{ title: 'Intrinsic Value' },
-	{ title: 'Time Value/Cost per week' },
+	{ title: 'Time Value/$ p w' },
 	{ title: 'Time Value %' },
 	{ title: 'Total Cost' },
 	{ title: '$ / % Risk' },
@@ -227,7 +227,7 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 		max: 1000,
 
 		step: 1,
-		values: [90, 360],
+		values: [90, 1000],
 		slide: function(event, ui) {
 			live_range_val.val(ui.values[0] + " - " + ui.values[1]);
 		},
@@ -255,7 +255,7 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 		min: 0,
 		max: 100,
 		step: .1,
-		values: [0, 50],
+		values: [0, 100],
 		slide: function(event, ui) {
 			val_range_tv.val(ui.values[0] + " - " + ui.values[1]);
 		},
@@ -309,7 +309,7 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 
 			}
 		},
-		
+
 		responsive: {
 			details: {
 				type: 'column',
@@ -366,6 +366,8 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 
 		var price = data[4];
 
+		$('.strikeprice').html(price)
+
 
 		var setForPrice = [];
 		priceWise[price].forEach(function(option) {
@@ -393,11 +395,18 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 					visible: false,
 				},
 				{
+					target: 4,
+					visible: false,
+				},
+				{
 					target: 7,
 					visible: false,
 				},
 				{
 					target: 5,
+					visible: false,
+				}, {
+					target: 9,
 					visible: false,
 				},
 				{
@@ -464,8 +473,8 @@ $(function() {
 	$('.myslider').hide();
 	if (localStorage.getItem('access')) {
 		$('.key').hide();
-	}else {
-			$('.key').show();
+	} else {
+		$('.key').show();
 	}
 
 
@@ -485,8 +494,8 @@ $(function() {
 		e.preventDefault();
 		$('#loading').show();
 		$('.myslider').hide();
-		$('.price-info').hide();
-
+		$('.intro').show();
+		$('.price-info').show();
 		if (!localStorage.getItem('access') && $('#access').val()) {
 			localStorage.setItem('access', $('#access').val());
 		}

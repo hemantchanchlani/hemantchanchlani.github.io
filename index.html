@@ -127,8 +127,7 @@ p.myslider {
 		<div class="modal-dialog modal-xl modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h1 class="modal-title fs-5" id="exampleModalLabel">More
-						Details</h1>
+					<h1 class="modal-title fs-5" id="exampleModalLabel">Strike Price : $<span class="strikeprice"></span> </h1>
 					<button type="button" class="btn-close" data-bs-dismiss="modal"
 						aria-label="Close">Close</button>
 				</div>
@@ -156,8 +155,7 @@ p.myslider {
 		<div class="modal-dialog modal-xl modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h1 class="modal-title fs-5" id="exampleModalLabel">More
-						Details</h1>
+					<h1 class="modal-title fs-5" id="exampleModalLabel">Strike Price : $<span class="strikeprice"></span> </h1>
 					<button type="button" class="btn-close" data-bs-dismiss="modal"
 						aria-label="Close">Close</button>
 				</div>
@@ -180,6 +178,7 @@ p.myslider {
 
 	<div class="newsletter-subscribe" >
 		<div class="container">
+		<!-- Pricing Info -->
 			<div class="intro" style="display: none">
 				<h2 id="symbol-label" class="text-center"></h2>
 				<p class="text-center price-info">
@@ -189,6 +188,7 @@ p.myslider {
 					Purchase Price:<span id="purchasePrice"></span>
 				</p>
 			</div>
+			<!-- Pricing Info end -->
 			<form class="form-inline" id="form" method="post">
 				<div class="form-group">
 					<input class="form-control" type="text" id="symbol"
@@ -243,7 +243,7 @@ p.myslider {
 
 
 				<p class="myslider put">
-					<label>Time Value Percentage Filter (50% or less) : </label><input
+					<label>Time Value Percentage Filter : </label><input
 						type="text" id="live_range_val_tv" readonly
 						style="border: 0; color: #f6931f; font-weight: bold;">
 				</p>
