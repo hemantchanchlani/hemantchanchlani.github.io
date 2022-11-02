@@ -463,7 +463,9 @@ $(function() {
 	$("#slider").slider();
 	$('.myslider').hide();
 	if (localStorage.getItem('access')) {
-		$('#key').hide();
+		$('.key').hide();
+	}else {
+			$('.key').show();
 	}
 
 
@@ -485,8 +487,8 @@ $(function() {
 		$('.myslider').hide();
 		$('.price-info').hide();
 
-		if (!localStorage.getItem('access') && $('#key').val()) {
-			localStorage.setItem('access', $('#key').val());
+		if (!localStorage.getItem('access') && $('#access').val()) {
+			localStorage.setItem('access', $('#access').val());
 		}
 
 

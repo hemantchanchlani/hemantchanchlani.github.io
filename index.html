@@ -120,6 +120,7 @@ p.myslider {
 </head>
 <body>
 	<a href="./is.html" class="btn btn-info">Read Strategies</a>
+	<a href="#" class="btn btn-warning" onclick="javascript:localStorage.removeItem('access')" >Delete Token</a>
 	<!-- Model dialog -->
 	<div class="modal fade" id="addionalDetailsCall" tabindex="-1"
 		aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -177,9 +178,9 @@ p.myslider {
 	</div>
 	<!--  end of modal dialog -->
 
-	<div class="newsletter-subscribe">
+	<div class="newsletter-subscribe" >
 		<div class="container">
-			<div class="intro">
+			<div class="intro" style="display: none">
 				<h2 id="symbol-label" class="text-center"></h2>
 				<p class="text-center price-info">
 					Current Price:<span id="lastPrice"></span>
@@ -197,14 +198,14 @@ p.myslider {
 					<input class="form-control" type="text" id="price"
 						placeholder="Your purchase price">
 				</div>
-				<div class="form-group">
-					<input class="form-control" type="text" id="key"
+				<div class="form-group key" style="display: none">
+					<input class="form-control" type="text" id='access'
 						placeholder="Access Key">
 				</div>
 				<div class="form-group">
 					<button class="btn btn-primary" type="submit">Get Option
 						Chain</button>
-					<div class="spinner-grow text-primary" id="loading">
+					<div style="display: none" class="spinner-grow text-primary" id="loading">
 						<span class="visually-hidden">Loading...</span>
 					</div>
 				</div>
@@ -212,8 +213,7 @@ p.myslider {
 		</div>
 	</div>
 
-	</section>
-	<section class="main-section myslider">
+	<section class="main-section myslider" style="display: none">
 
 		<div class="row">
 			<div class="col-md-8 m-auto">
