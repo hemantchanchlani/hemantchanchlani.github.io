@@ -53,78 +53,80 @@ function getOptionChain() {
 					var lengthOfSymbol = symbol.length;
 
 					if (option.symbol.slice(6).indexOf('C') > -1) {
-						
+
 						if (option.strike >= purchasePrice) {
 
 
-						//****CALL STARTS ***********
+							//****CALL STARTS ***********
 
-						option.amountLost = (lastPrice + option.last - option.strike).toFixed(2);
-						option.percentLost = (100 * (option.amountLost / (lastPrice + option.last))).toFixed(2);
-						option.capitalInvested = (lastPrice + option.last).toFixed(2);
-						if (option.strike <= lastPrice) {
-							option.intrinsicValue = (lastPrice - option.strike).toFixed(2);
-							option.timeValue = (option.last - option.intrinsicValue).toFixed(2);
+							option.amountLost = (lastPrice + option.last - option.strike).toFixed(2);
+							option.percentLost = (100 * (option.amountLost / (lastPrice + option.last))).toFixed(2);
+							option.capitalInvested = (lastPrice + option.last).toFixed(2);
+							if (option.strike <= lastPrice) {
+								option.intrinsicValue = (lastPrice - option.strike).toFixed(2);
+								option.timeValue = (option.last - option.intrinsicValue).toFixed(2);
 
-						} else {
-							option.intrinsicValue = 0;
-							option.timeValue = (option.last - option.intrinsicValue).toFixed(2);
+							} else {
+								option.intrinsicValue = 0;
+								option.timeValue = (option.last - option.intrinsicValue).toFixed(2);
+
+							}
+
+
+
+							// Create a JSON FOR date and strike start
+
+							if (state.dateWiseCalls[expirationDate]) {
+
+
+
+
+								state.dateWiseCalls[expirationDate].push(option);
+								//state.dateWiseCalls[expirationDate][option.strike].push(option);
+
+
+
+
+							} else {
+								state.dateWiseCalls[expirationDate] = [];
+								state.dateWiseCalls[expirationDate].push(option);
+
+							}
+
+							//this.setState({ dateWiseCalls: state.dateWiseCalls });
+
+
+							// Create a JSON FOR date  and strike end
+
+
+							// Create a JSON FOR price and datewise start
+
+							if (state.priceWiseCalls[option.strike]) {
+								state.priceWiseCalls[option.strike].push(option);
+
+							} else {
+								state.priceWiseCalls[option.strike] = [];
+								state.priceWiseCalls[option.strike].push(option);
+
+							}
+
+							//this.setState({ priceWiseCalls: state.priceWiseCalls });
+
+
+							// Create a JSON FOR price and datewise end
+
+
+
+							// CALL ends
+
+							option.last = option.bid;
 
 						}
-
-
-
-						// Create a JSON FOR date and strike start
-
-						if (state.dateWiseCalls[expirationDate]) {
-
-
-
-
-							state.dateWiseCalls[expirationDate].push(option);
-							//state.dateWiseCalls[expirationDate][option.strike].push(option);
-
-
-
-
-						} else {
-							state.dateWiseCalls[expirationDate] = [];
-							state.dateWiseCalls[expirationDate].push(option);
-
-						}
-
-						//this.setState({ dateWiseCalls: state.dateWiseCalls });
-
-
-						// Create a JSON FOR date  and strike end
-
-
-						// Create a JSON FOR price and datewise start
-
-						if (state.priceWiseCalls[option.strike]) {
-							state.priceWiseCalls[option.strike].push(option);
-
-						} else {
-							state.priceWiseCalls[option.strike] = [];
-							state.priceWiseCalls[option.strike].push(option);
-
-						}
-
-						//this.setState({ priceWiseCalls: state.priceWiseCalls });
-
-
-						// Create a JSON FOR price and datewise end
-
-
-
-						// CALL ends
-
-}
 
 					} else {
 
 
-
+						option.last = option.ask;
 						//****PUT
 
 						option.amountLost = (purchasePrice + option.last - option.strike).toFixed(2);
