@@ -224,10 +224,10 @@ function populateOptionTab(dateWiseOptions, today, priceWise, tableId, columnsPa
 	val_range.slider({
 		range: true,
 		min: 1,
-		max: 1000,
+		max: 2000,
 
 		step: 1,
-		values: [90, 1000],
+		values: [90, 2000],
 		slide: function(event, ui) {
 			live_range_val.val(ui.values[0] + " - " + ui.values[1]);
 		},
