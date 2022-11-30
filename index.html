@@ -22,7 +22,9 @@
 	
 }
 
-.tab-content{padding-top: 50px;}
+.tab-content {
+	padding-top: 50px;
+}
 
 p.myslider {
 	margin-bottom: 0rem;
@@ -71,9 +73,11 @@ p.myslider {
 .red {
 	color: red;
 }
-.dataTables_filter{
-	display:none;
+
+.dataTables_filter {
+	display: none;
 }
+
 .newsletter-subscribe form .form-control {
 	background: #eff1f4;
 	border: none;
@@ -121,14 +125,18 @@ p.myslider {
 <body>
 	<a href="./is.html" class="btn btn-info">Read Strategies</a>
 	<a href="./trade-guide.html" class="btn btn-success">Trade Guide</a>
-	<a href="#" class="btn btn-warning" onclick="javascript:localStorage.removeItem('access')" >Delete Token</a>
+	<a href="#" class="btn btn-warning"
+		onclick="javascript:localStorage.removeItem('access')">Delete
+		Token</a>
 	<!-- Model dialog -->
 	<div class="modal fade" id="addionalDetailsCall" tabindex="-1"
 		aria-labelledby="exampleModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-xl modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h1 class="modal-title fs-5" id="exampleModalLabel">Strike Price : $<span class="strikeprice"></span> </h1>
+					<h1 class="modal-title fs-5" id="exampleModalLabel">
+						Strike Price : $<span class="strikeprice"></span>
+					</h1>
 					<button type="button" class="btn-close" data-bs-dismiss="modal"
 						aria-label="Close">Close</button>
 				</div>
@@ -156,7 +164,9 @@ p.myslider {
 		<div class="modal-dialog modal-xl modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h1 class="modal-title fs-5" id="exampleModalLabel">Strike Price : $<span class="strikeprice"></span> </h1>
+					<h1 class="modal-title fs-5" id="exampleModalLabel">
+						Strike Price : $<span class="strikeprice"></span>
+					</h1>
 					<button type="button" class="btn-close" data-bs-dismiss="modal"
 						aria-label="Close">Close</button>
 				</div>
@@ -177,9 +187,9 @@ p.myslider {
 	</div>
 	<!--  end of modal dialog -->
 
-	<div class="newsletter-subscribe" >
+	<div class="newsletter-subscribe">
 		<div class="container">
-		<!-- Pricing Info -->
+			<!-- Pricing Info -->
 			<div class="intro" style="display: none">
 				<h2 id="symbol-label" class="text-center"></h2>
 				<p class="text-center price-info">
@@ -206,9 +216,15 @@ p.myslider {
 				<div class="form-group">
 					<button class="btn btn-primary" type="submit">Get Option
 						Chain</button>
-					<div style="display: none" class="spinner-grow text-primary" id="loading">
+					<div style="display: none" class="spinner-grow text-primary"
+						id="loading">
 						<span class="visually-hidden">Loading...</span>
 					</div>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="checked"
+						id="getAll"> <label class="form-check-label"
+						for="flexCheckDefault"> Get All </label>
 				</div>
 			</form>
 		</div>
@@ -244,11 +260,11 @@ p.myslider {
 
 
 				<p class="myslider put">
-					<label>Time Value Percentage Filter : </label><input
-						type="text" id="live_range_val_tv" readonly
+					<label>Time Value Percentage Filter : </label><input type="text"
+						id="live_range_val_tv" readonly
 						style="border: 0; color: #f6931f; font-weight: bold;">
 				</p>
-				<div id="val_range_tv" class="put"  style="width: 1200px"></div>
+				<div id="val_range_tv" class="put" style="width: 1200px"></div>
 
 
 				<p class="myslider put">
@@ -256,7 +272,7 @@ p.myslider {
 						id="live_range_val_itm" readonly
 						style="border: 0; color: #f6931f; font-weight: bold;">
 				</p>
-				<div id="val_range_itm"  class="put" style="width: 1200px"></div>
+				<div id="val_range_itm" class="put" style="width: 1200px"></div>
 
 
 

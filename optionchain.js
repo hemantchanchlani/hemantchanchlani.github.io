@@ -41,6 +41,8 @@ function getOptionChain() {
 			for (i = 0; i < expiryDates.length; i++) {
 				deferreds.push(t.getOptionChains(symbol, expiryDates[i], requests));
 			}
+			
+			
 			$.when.apply(undefined, deferreds).then(function() {
 
 				var optionChain = [].concat.apply([], requests);
@@ -54,7 +56,7 @@ function getOptionChain() {
 
 					if (option.symbol.slice(6).indexOf('C') > -1) {
 
-						if (option.strike >= purchasePrice) {
+						if (option.strike >= purchasePrice || $('#getAll').is(':checked')) {
 
 
 							//****CALL STARTS ***********
