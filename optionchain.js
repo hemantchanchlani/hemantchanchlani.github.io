@@ -56,7 +56,7 @@ function getOptionChain() {
 
 					if (option.symbol.slice(6).indexOf('C') > -1) {
 
-						if (option.strike >= purchasePrice || $('#getAll').is(':checked')) {
+						if (option.strike >= purchasePrice || ( $('#getAll').is(':checked') && option.volume>1) ) {
 
 
 							//****CALL STARTS ***********
