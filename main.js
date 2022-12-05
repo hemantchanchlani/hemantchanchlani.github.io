@@ -19,9 +19,6 @@ var commonColDef = [
 	{
 		target: 2,
 		visible: false,
-	}, {
-		target: 14,
-		visible: false,
 	},
 	{
 		target: 3,
@@ -43,8 +40,8 @@ var commonColumns = [
 	{ title: 'Total Cost' },
 	{ title: '$ / % Risk' },
 	{ title: 'Guranteed Return' },
-	{ title: 'Volume/OI' },
-	{ title: 'Desc' },
+	{ title: 'Volume' },
+	{ title: 'OI' },
 
 
 
@@ -172,11 +169,11 @@ function populateRow(option, diff) {
 	row.push('$' + (option.strike * 100));
 
 	//{ title: 'volume' },
-	row.push(option.volume + '/' + option.open_interest);
+	row.push(option.volume);
 
 
-	//{ title: 'Desc' },
-	row.push(option.volume + '/' + option.description);
+	//{ title: 'OI' },
+	row.push(option.open_interest);
 
 	return row;
 }

@@ -144,7 +144,7 @@ function getOptionChain() {
 
 						}
 
-						if (lastPrice < option.strike) {
+						if (lastPrice < option.strike || ( $('#getAll').is(':checked') && option.volume>1)) {
 
 
 							// Create a JSON FOR date and strike start
