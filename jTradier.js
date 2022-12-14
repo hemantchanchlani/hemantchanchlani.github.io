@@ -57,6 +57,7 @@ class Tradier {
 	getQuote(symbols) {
 		return this.get('markets/quotes', {
 			symbols: symbols,
+			greeks : true
 		}).then(function(response) {
 			return (response.quotes);
 		});
@@ -73,7 +74,8 @@ class Tradier {
 	}
 
 	getOptionChains(symbol, expiration, requests) {
-		return this.get('markets/options/chains', { symbol, expiration }).then(function(response) {
+		let greeks = true;
+		return this.get('markets/options/chains', { symbol, expiration , greeks }).then(function(response) {
 			 requests.push(response.options.option);
 		});
 	}
