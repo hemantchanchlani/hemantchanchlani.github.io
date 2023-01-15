@@ -2,9 +2,18 @@ var calls = [];
 var puts = [];
 var openInterestChart = null;
 var volumeChart = null;
+var pcrChart = null;
 
 var strikeRange = 400;
 var openToday = 4000;
+
+var callOI = {};
+var putOI = {};
+var supportNumbers = [];
+var resistancetNumbers = [];
+var maxOpenInterest = 50;
+
+var saveInLocal = true;
 
 var access = localStorage.getItem('access');
 
@@ -43,7 +52,7 @@ function prepareChart() {
 						},
 						color: 'black',
 						font: {
-							size: '10'
+							size: '9'
 						}
 					}
 				},
@@ -86,7 +95,7 @@ function prepareChart() {
 						},
 						color: 'black',
 						font: {
-							size: '10'
+							size: '9'
 						}
 					}
 				},
@@ -94,6 +103,52 @@ function prepareChart() {
 				parsing: {
 					xAxisKey: 'strikeLabel',
 					yAxisKey: 'volume'
+				}
+			}
+		}
+	);
+
+
+
+	pcrChart = new Chart(
+		document.getElementById('PCR'),
+		{
+			type: 'line',
+			plugins: [ChartDataLabels],
+			data: {
+
+				datasets: [{
+					label: 'SUPPORT',
+					data: supportNumbers
+				}, {
+					label: 'RESISTANCE',
+					data: resistancetNumbers
+				}]
+			},
+			scales: {
+				yAxes: [{
+					ticks: {
+						beginAtZero: true,
+					}
+				}]
+			},
+			options: {
+				plugins: {
+					datalabels: {
+						anchor: 'end',
+						align: 'top',
+						formatter: function(value, context) {
+							return value.supportOrResistance;
+						},
+						color: 'black',
+						font: {
+							size: '10'
+						}
+					}
+				},
+				parsing: {
+					xAxisKey: 'strikeLabel',
+					yAxisKey: 'supportOrResistance',
 				}
 			}
 		}
@@ -164,7 +219,7 @@ function getQuotes(time, fileName) {
 			getOpenInt(symbol, dateOfExpiry);
 			setInterval(function() {
 				getOpenInt(symbol, dateOfExpiry);
-			}, 20000);
+			}, 2000000);
 
 		}
 	}
@@ -194,17 +249,19 @@ function getOpenInt(symbol, dateOfExpiry) {
 			'Accept': 'application/json'
 		},
 		success: function(data, response, code) {
-
-
-
-			openInterestChart.destroy();
-
 			calls = [];
 			puts = [];
+			supportNumbers = [];
+			resistancetNumbers = [];
 			volumeChart.destroy();
+			openInterestChart.destroy();
+			pcrChart.destroy();
+
 
 
 			var options = data.options.option;
+
+
 
 
 			options.forEach(function(option, i) {
@@ -214,17 +271,61 @@ function getOpenInt(symbol, dateOfExpiry) {
 
 					if (option.symbol.slice(6).indexOf('P') > -1) {
 						puts.push(option);
+						putOI[option.strikeLabel] = option.open_interest;
 					}
 
 
 					if (option.symbol.slice(6).indexOf('C') > -1) {
 						calls.push(option);
+						if (option.open_interest > maxOpenInterest) {
+							callOI[option.strikeLabel] = option.open_interest;
+						}
 					}
 				}
 
 
 
 			});
+
+
+			if (saveInLocal) {
+
+				var now = new Date();
+
+				var key = symbol + '-' + dateOfExpiry + '-' + new Date().toLocaleTimeString();
+
+				localStorage.setItem(key + '-calls', JSON.stringify(calls));
+				localStorage.setItem(key + '-puts', JSON.stringify(puts));
+
+				saveInLocal = false;
+			}
+
+			Object.keys(callOI).forEach(function(strikeLabel) {
+
+				if (putOI[strikeLabel] && Math.round(Math.abs(callOI[strikeLabel] / putOI[strikeLabel])) < 50 && Math.round(Math.abs(putOI[strikeLabel] / callOI[strikeLabel]) < 50)) {
+
+					var oneVal = {};
+
+					oneVal.strikeLabel = strikeLabel;
+					oneVal.supportOrResistance = Math.round(Math.abs(putOI[strikeLabel] / callOI[strikeLabel]));
+					supportNumbers.push(oneVal);
+
+
+
+					var secondVal = {};
+
+					secondVal.strikeLabel = strikeLabel;
+					secondVal.supportOrResistance = Math.round(Math.abs(callOI[strikeLabel] / putOI[strikeLabel]));
+					resistancetNumbers.push(secondVal);
+
+				}
+
+
+
+
+			})
+
+
 
 			prepareChart();
 		}
@@ -233,3 +334,6 @@ function getOpenInt(symbol, dateOfExpiry) {
 	);
 }
 getQuotes();
+setInterval(function() {
+	saveInLocal = true;
+}, 120000);
