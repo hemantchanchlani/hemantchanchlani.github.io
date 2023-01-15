@@ -39,10 +39,11 @@ function prepareChart() {
 						anchor: 'end',
 						align: 'top',
 						formatter: function(value, context) {
-							return value.open_interest;
+							return value.strike + "(" + value.open_interest + ")";
 						},
+						color: 'black',
 						font: {
-							weight: 'bold'
+							size: '10'
 						}
 					}
 				},
@@ -75,12 +76,17 @@ function prepareChart() {
 				plugins: {
 					datalabels: {
 						anchor: 'end',
+
 						align: 'top',
 						formatter: function(value, context) {
 							return value.volume;
 						},
+						formatter: function(value, context) {
+							return value.strike + "(" + value.open_interest + ")";
+						},
+						color: 'black',
 						font: {
-							weight: 'bold'
+							size: '10'
 						}
 					}
 				},
