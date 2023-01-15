@@ -17,6 +17,15 @@ var saveInLocal = true;
 
 var access = localStorage.getItem('access');
 
+function footer(tooltipItems) {
+	let sum = 0;
+
+	tooltipItems.forEach(function(tooltipItem) {
+		sum += tooltipItem.parsed.y;
+	});
+	return 'Sum: ' + sum;
+};
+
 function prepareChart() {
 
 	openInterestChart = new Chart(
@@ -43,6 +52,10 @@ function prepareChart() {
 				}]
 			},
 			options: {
+				interaction: {
+					intersect: false,
+					mode: 'index',
+				},
 				plugins: {
 					datalabels: {
 						anchor: 'end',
@@ -82,6 +95,10 @@ function prepareChart() {
 				}]
 			},
 			options: {
+				interaction: {
+					intersect: false,
+					mode: 'index',
+				},
 				plugins: {
 					datalabels: {
 						anchor: 'end',
@@ -133,6 +150,10 @@ function prepareChart() {
 				}]
 			},
 			options: {
+				interaction: {
+					intersect: false,
+					mode: 'index',
+				},
 				plugins: {
 					datalabels: {
 						anchor: 'end',
@@ -307,7 +328,8 @@ function getOpenInt(symbol, dateOfExpiry) {
 					var oneVal = {};
 
 					oneVal.strikeLabel = strikeLabel;
-					oneVal.supportOrResistance = Math.round(Math.abs(putOI[strikeLabel] / callOI[strikeLabel]));
+					oneVal.supportOrResistance = Math.round(putOI[strikeLabel] / callOI[strikeLabel] * 10) / 10;
+
 					supportNumbers.push(oneVal);
 
 
@@ -315,7 +337,7 @@ function getOpenInt(symbol, dateOfExpiry) {
 					var secondVal = {};
 
 					secondVal.strikeLabel = strikeLabel;
-					secondVal.supportOrResistance = Math.round(Math.abs(callOI[strikeLabel] / putOI[strikeLabel]));
+					secondVal.supportOrResistance = Math.round(callOI[strikeLabel] / putOI[strikeLabel] * 10) / 10;;
 					resistancetNumbers.push(secondVal);
 
 				}
