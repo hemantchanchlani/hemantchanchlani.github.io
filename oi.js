@@ -2,21 +2,26 @@ var calls = [];
 var puts = [];
 var openInterestChart = null;
 var volumeChart = null;
-var pcrChart = null;
-var lastPcrChart = null;
+var pcrForEachStrike = null;
+var pcrHistory = null;
+var sumOfPCRHistory = null;
 
 var strikeRange = 200;
 var openToday = 4000;
 
 var callOI = {};
 var putOI = {};
+
 var supportNumbers = [];
 var resistancetNumbers = [];
 var lastPCRs = [];
+var sumOfPutsAtATime = [];
+var sumOfCallsAtATime = [];
+
+
+
 var maxOpenInterest = 150;
-
 var saveInLocal = true;
-
 var access = localStorage.getItem('access');
 
 function footer(tooltipItems) {
@@ -30,8 +35,64 @@ function footer(tooltipItems) {
 
 function prepareChart() {
 
+
+
+
+
+	sumOfPCRHistory = new Chart(
+		document.getElementById('sumOfPCRHistory'),
+		{
+			type: 'line',
+			plugins: [ChartDataLabels],
+			data: {
+
+				datasets: [{
+					label: 'Sum of Calls',
+					data: sumOfCallsAtATime
+				}, {
+					label: 'Sum of Puts',
+					data: sumOfPutsAtATime
+				}]
+			},
+			scales: {
+				yAxes: [{
+					ticks: {
+						beginAtZero: true,
+					}
+				}]
+			},
+			options: {
+				interaction: {
+					intersect: false,
+					mode: 'index',
+				},
+				plugins: {
+					datalabels: {
+						anchor: 'end',
+						align: 'top',
+						formatter: function(value, context) {
+							return value.ratio;
+						},
+						color: 'black',
+						font: {
+							size: '10'
+						}
+					}
+				},
+				parsing: {
+					xAxisKey: 'time',
+					yAxisKey: 'ratio',
+				}
+			}
+		}
+	);
+
+
+
+
+
 	openInterestChart = new Chart(
-		document.getElementById('open_interest'),
+		document.getElementById('openInterestChart'),
 		{
 			type: 'line',
 			plugins: [ChartDataLabels],
@@ -129,8 +190,8 @@ function prepareChart() {
 
 
 
-	lastPcrChart = new Chart(
-		document.getElementById('lastPCR'),
+	pcrHistory = new Chart(
+		document.getElementById('pcrHistory'),
 		{
 			type: 'line',
 			plugins: [ChartDataLabels],
@@ -177,8 +238,8 @@ function prepareChart() {
 
 
 
-	pcrChart = new Chart(
-		document.getElementById('PCR'),
+	pcrForEachStrike = new Chart(
+		document.getElementById('pcrForEachStrike'),
 		{
 			type: 'line',
 			plugins: [ChartDataLabels],
@@ -323,10 +384,15 @@ function getOpenInt(symbol, dateOfExpiry) {
 			puts = [];
 			supportNumbers = [];
 			resistancetNumbers = [];
+
+
 			volumeChart.destroy();
 			openInterestChart.destroy();
-			pcrChart.destroy();
-			lastPcrChart.destroy();
+			pcrForEachStrike.destroy();
+			pcrHistory.destroy();
+			sumOfPCRHistory.destroy();
+
+
 			var options = data.options.option;
 
 			var sumofPuts = 0;
@@ -363,6 +429,34 @@ function getOpenInt(symbol, dateOfExpiry) {
 			var keyforPCR = symbol + '-' + dateOfExpiry + '-pcr';
 
 
+			var keyforSumOfPuts = symbol + '-' + dateOfExpiry + '-sumofputs';
+			var keyforSumOfCalls = symbol + '-' + dateOfExpiry + '-sumofcalls';
+
+
+
+
+			var previouskeyforSumOfPuts = localStorage.getItem(keyforSumOfPuts);
+			if (previouskeyforSumOfPuts) {
+				sumOfPutsAtATime = JSON.parse(previouskeyforSumOfPuts);
+			}
+			var itemPut = {};
+			itemPut.time = timeOfData;
+			itemPut.ratio = sumofPuts;
+			sumOfPutsAtATime.push(itemPut);
+
+
+			var previouskeyforSumOfCalls = localStorage.getItem(keyforSumOfCalls);
+			if (previouskeyforSumOfCalls) {
+				previouskeyforSumOfCalls = JSON.parse(previouskeyforSumOfCalls);
+			}
+			var itemCall = {};
+			itemCall.time = timeOfData;
+			itemCall.ratio = sumOfCalls;
+			sumOfCallsAtATime.push(itemCall);
+
+
+
+
 			var previous = localStorage.getItem(keyforPCR);
 			if (previous) {
 				lastPCRs = JSON.parse(previous);
@@ -372,7 +466,8 @@ function getOpenInt(symbol, dateOfExpiry) {
 			item.ratio = (sumofPuts / sumOfCalls).toFixed(2);
 			lastPCRs.push(item);
 
-			localStorage.setItem(keyforPCR, JSON.stringify(lastPCRs));
+			localStorage.setItem(keyforSumOfPuts, JSON.stringify(sumOfPutsAtATime));
+			localStorage.setItem(keyforSumOfCalls, JSON.stringify(sumOfCallsAtATime));
 
 
 			if (saveInLocal) {
