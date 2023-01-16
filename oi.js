@@ -12,7 +12,6 @@ var callOI = {};
 var putOI = {};
 var supportNumbers = [];
 var resistancetNumbers = [];
-var maxOpenInterest = 50;
 var lastPCRs = [];
 var maxOpenInterest = 150;
 
