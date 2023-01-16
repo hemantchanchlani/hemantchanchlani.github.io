@@ -14,7 +14,7 @@ var supportNumbers = [];
 var resistancetNumbers = [];
 var maxOpenInterest = 50;
 var lastPCRs = [];
-var maxOpenInterest = 250;
+var maxOpenInterest = 150;
 
 var saveInLocal = true;
 
