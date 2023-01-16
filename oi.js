@@ -5,6 +5,7 @@ var volumeChart = null;
 var pcrForEachStrike = null;
 var pcrHistory = null;
 var sumOfPCRHistory = null;
+var changeinOIPerStrike = null;
 
 var strikeRange = 200;
 var openToday = 4000;
@@ -18,7 +19,13 @@ var lastPCRs = [];
 var sumOfPutsAtATime = [];
 var sumOfCallsAtATime = [];
 
+var changeinCall_OI = [];
+var changeinPut_OI = [];
 
+
+
+var old_OI_Puts = {};
+var old_OI_Calls = {};
 
 var maxOpenInterest = 150;
 var saveInLocal = true;
@@ -36,6 +43,56 @@ function footer(tooltipItems) {
 function prepareChart() {
 
 
+
+
+
+	changeinOIPerStrike = new Chart(
+		document.getElementById('changeinOIPerStrike'),
+		{
+			type: 'line',
+			plugins: [ChartDataLabels],
+			data: {
+
+				datasets: [{
+					label: 'Change % in Calls',
+					data: changeinCall_OI
+				}, {
+					label: 'Change % in Puts',
+					data: changeinPut_OI
+				}]
+			},
+			scales: {
+				yAxes: [{
+					ticks: {
+						beginAtZero: true,
+					}
+				}]
+			},
+			options: {
+				interaction: {
+					intersect: false,
+					mode: 'index',
+				},
+				plugins: {
+					datalabels: {
+						anchor: 'end',
+						align: 'top',
+						formatter: function(value, context) {
+							return value.changePercent;
+						},
+						color: 'black',
+						font: {
+							size: '10'
+						}
+					}
+				},
+				parsing: {
+					xAxisKey: 'strike',
+					yAxisKey: 'changePercent',
+				}
+			}
+		}
+	);
 
 
 
@@ -350,7 +407,7 @@ function getQuotes(time, fileName) {
 			getOpenInt(symbol, dateOfExpiry);
 			setInterval(function() {
 				getOpenInt(symbol, dateOfExpiry);
-			}, 1 * 60 * 1000);
+			}, .5 * 60 * 1000);
 
 		}
 	}
@@ -384,6 +441,9 @@ function getOpenInt(symbol, dateOfExpiry) {
 			puts = [];
 			supportNumbers = [];
 			resistancetNumbers = [];
+			changeinCall_OI = [];
+			changeinPut_OI = [];
+
 
 
 			volumeChart.destroy();
@@ -391,6 +451,7 @@ function getOpenInt(symbol, dateOfExpiry) {
 			pcrForEachStrike.destroy();
 			pcrHistory.destroy();
 			sumOfPCRHistory.destroy();
+			changeinOIPerStrike.destroy();
 
 
 			var options = data.options.option;
@@ -399,12 +460,19 @@ function getOpenInt(symbol, dateOfExpiry) {
 			var sumOfCalls = 0;
 
 
+
 			options.forEach(function(option, i) {
 				if (Math.abs(option.strike - openToday) <= strikeRange) {
 					option.strikeLabel = option.strike + '';
 
 					if (option.symbol.slice(6).indexOf('P') > -1) {
 						puts.push(option);
+
+						var item = {};
+						item.strike = option.strikeLabel;
+						item.changePercent = (old_OI_Puts[option.strikeLabel] != undefined && old_OI_Puts[option.strikeLabel] != option.open_interest) ? (option.open_interest - old_OI_Puts[option.strikeLabel]) : 0;
+						changeinPut_OI.push(item);
+						old_OI_Puts[option.strikeLabel] = option.open_interest;
 						sumofPuts += option.open_interest;
 						putOI[option.strikeLabel] = option.open_interest;
 					}
@@ -412,7 +480,14 @@ function getOpenInt(symbol, dateOfExpiry) {
 
 					if (option.symbol.slice(6).indexOf('C') > -1) {
 						calls.push(option);
+
+
+						var item = {};
+						item.strike = option.strikeLabel;
+						item.changePercent = (old_OI_Calls[option.strikeLabel] != undefined && old_OI_Calls[option.strikeLabel] != option.open_interest) ? (option.open_interest - old_OI_Calls[option.strikeLabel]) : 0;
+						changeinCall_OI.push(item);
 						sumOfCalls += option.open_interest;
+						old_OI_Calls[option.strikeLabel] = option.open_interest;
 						if (option.open_interest > maxOpenInterest) {
 							callOI[option.strikeLabel] = option.open_interest;
 						}
@@ -488,7 +563,7 @@ function getOpenInt(symbol, dateOfExpiry) {
 
 					var secondVal = {};
 					secondVal.strikeLabel = strikeLabel;
-					secondVal.supportOrResistance = Math.round(callOI[strikeLabel] / putOI[strikeLabel] * 100) / 100;;
+					secondVal.supportOrResistance = Math.round(callOI[strikeLabel] / putOI[strikeLabel] * 100) / 100;
 					resistancetNumbers.push(secondVal);
 
 				}
