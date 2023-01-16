@@ -21,7 +21,7 @@ var sumOfCallsAtATime = [];
 
 var changeinCall_OI = [];
 var changeinPut_OI = [];
-
+refreshInterval = 1;
 
 
 var old_OI_Puts = {};
@@ -350,8 +350,6 @@ function prepareChart() {
 prepareChart();
 
 
-
-
 function getQuotes(time, fileName) {
 
 	var symbol = 'SPX';
@@ -407,7 +405,7 @@ function getQuotes(time, fileName) {
 			getOpenInt(symbol, dateOfExpiry);
 			setInterval(function() {
 				getOpenInt(symbol, dateOfExpiry);
-			}, .5 * 60 * 1000);
+			}, refreshInterval * 60 * 1000);
 
 		}
 	}
@@ -415,10 +413,10 @@ function getQuotes(time, fileName) {
 	);
 }
 
+var oldChangeInOICall = {};
+var oldChangeInOIPut = {};
 
 function getOpenInt(symbol, dateOfExpiry) {
-
-
 
 
 	console.log(symbol, dateOfExpiry);
@@ -470,8 +468,15 @@ function getOpenInt(symbol, dateOfExpiry) {
 
 						var item = {};
 						item.strike = option.strikeLabel;
-						item.changePercent = (old_OI_Puts[option.strikeLabel] != undefined && old_OI_Puts[option.strikeLabel] != option.open_interest) ? (option.open_interest - old_OI_Puts[option.strikeLabel]) : 0;
+						var changePercent = (old_OI_Puts[option.strikeLabel] != undefined && old_OI_Puts[option.strikeLabel] != option.open_interest) ? (option.open_interest - old_OI_Puts[option.strikeLabel]) : 0;
 						changeinPut_OI.push(item);
+						if (oldChangeInOIPut[option.strikeLabel]) {
+							changePercent = oldChangeInOIPut[option.strikeLabel] + changePercent;
+
+						}
+						oldChangeInOIPut[option.strikeLabel] = changePercent;
+
+						item.changePercent = changePercent;
 						old_OI_Puts[option.strikeLabel] = option.open_interest;
 						sumofPuts += option.open_interest;
 						putOI[option.strikeLabel] = option.open_interest;
@@ -481,10 +486,17 @@ function getOpenInt(symbol, dateOfExpiry) {
 					if (option.symbol.slice(6).indexOf('C') > -1) {
 						calls.push(option);
 
-
 						var item = {};
 						item.strike = option.strikeLabel;
-						item.changePercent = (old_OI_Calls[option.strikeLabel] != undefined && old_OI_Calls[option.strikeLabel] != option.open_interest) ? (option.open_interest - old_OI_Calls[option.strikeLabel]) : 0;
+						var changePercent = (old_OI_Calls[option.strikeLabel] != undefined && old_OI_Calls[option.strikeLabel] != option.open_interest) ? (option.open_interest - old_OI_Calls[option.strikeLabel]) : 0;
+						if (oldChangeInOICall[option.strikeLabel]) {
+							changePercent = oldChangeInOICall[option.strikeLabel] + changePercent;
+
+						}
+
+						oldChangeInOICall[option.strikeLabel] = changePercent;
+
+						item.changePercent = changePercent;
 						changeinCall_OI.push(item);
 						sumOfCalls += option.open_interest;
 						old_OI_Calls[option.strikeLabel] = option.open_interest;
