@@ -534,7 +534,7 @@ function getOpenInt(symbol, dateOfExpiry) {
 
 			var previouskeyforSumOfCalls = localStorage.getItem(keyforSumOfCalls);
 			if (previouskeyforSumOfCalls) {
-				previouskeyforSumOfCalls = JSON.parse(previouskeyforSumOfCalls);
+				sumOfCallsAtATime = JSON.parse(previouskeyforSumOfCalls);
 			}
 			var itemCall = {};
 			itemCall.time = timeOfData;
