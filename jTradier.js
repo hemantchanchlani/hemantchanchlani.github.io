@@ -1,5 +1,5 @@
 const URLS = {
-	prod: 'https://api.tradier.com/v1/',
+	prod: 'https://sandbox.tradier.com/v1/',
 };
 
 

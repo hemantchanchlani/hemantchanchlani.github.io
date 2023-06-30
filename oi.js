@@ -392,7 +392,7 @@ function getQuotes(time, fileName) {
 
 	$.ajax({
 		type: 'get',
-		url: 'https://api.tradier.com/v1/markets/quotes',
+		url: 'https://sandbox.tradier.com/v1/markets/quotes',
 		data: {
 			'symbols': symbol,
 		},
@@ -424,7 +424,7 @@ function getOpenInt(symbol, dateOfExpiry) {
 
 	$.ajax({
 		type: 'get',
-		url: 'https://api.tradier.com/v1/markets/options/chains',
+		url: 'https://sandbox.tradier.com/v1/markets/options/chains',
 		data: {
 			'symbol': symbol,
 			'expiration': dateOfExpiry,
