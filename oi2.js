@@ -961,6 +961,67 @@ function trade(symbol, dateOfExpiry, strike, type) {
 	);
 }
 
+function placeSpreadOrder(symbol, strike) {
+
+	var strikeWanted = tryStrike = parseInt(strike);
+
+	var query = symbol;
+
+	if (symbol.slice(6).indexOf("C") > -1) {
+		var oType = "C";
+	} else {
+		var oType = "P";
+	}
+
+	var oPrefix = symbol.slice(0, 11);
+
+
+	for (var i = 0; i < 20; i++) {
+
+		if (oType == "C") {
+			tryStrike = tryStrike + 5;
+		} else {
+
+			tryStrike = tryStrike - 5;
+		}
+
+		query = query + ',' + oPrefix + getStrikeForOption(tryStrike);
+
+	}
+
+
+
+
+	var q = tradier.getQuote(query);
+
+
+
+	q.then(val => {
+
+		var sellSide = _.where(val, { 'symbol': symbol });
+		var buySide = _.where(val, { 'ask': '.6' });
+
+
+	});
+
+
+}
+
+
+function makeButtons(cName, options) {
+
+	$('.' + cName).empty();
+	_.each(options, function(option) {
+
+
+		$('.' + cName).append('<button onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '>' + option.strike + " (" + option.bid + ") " +
+			'</button>');
+
+
+	});
+
+}
+
 
 function showPutandCallOptions(oc) {
 
@@ -971,20 +1032,19 @@ function showPutandCallOptions(oc) {
 
 	_.each(oc.option, function(option) {
 
-		if (Math.abs(option.strike - last) <= 40) {
+		if (Math.abs(option.strike - last) <= .01 * last) {
 
 			if (option.symbol.slice(6).indexOf("P") > -1) {
 				putOptions.push(option);
 			} else {
 				callOptions.push(option);
 			}
-
-
 		}
 
 
 	});
-	callOptions;
+	makeButtons('call-button-holder', callOptions);
+	makeButtons('put-button-holder', putOptions);
 
 
 }
@@ -1002,7 +1062,7 @@ function todate() {
 	if (mm < 10) {
 		mm = '0' + mm;
 	}
-	today = yyyy + '-' + mm + '-' + dd;
+	today = yyyy + '-' + mm + '-' + 30;
 	return today;
 
 }
@@ -1020,8 +1080,6 @@ $(function() {
 
 		oc.then((val) => {
 			showPutandCallOptions(val);
-
-
 		});
 
 
