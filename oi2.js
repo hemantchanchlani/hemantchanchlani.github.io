@@ -3,10 +3,19 @@ var globalsymbol = 'SPX';
 var defaultQty = 1;
 
 
+var minincrement = {
+
+	'SPY': 1,
+	'SPX': 5,
+	'TSLA': 2.5
+
+}
+
+
 var buyLegMinimum = {
 
 	'SPX': .1,
-	'SPY': .01,
+	'SPY': .04,
 	'TSLA': 1
 
 };
@@ -16,7 +25,7 @@ var reloadOrderInterval = 2000;
 var accountNumber = 'VA94962097';
 var prodaccountNumber = '6YA26930';
 var apiKey = 'yG1tBcGioyqA0J6CA1oW3IJ4svAw';
-var prodApiKey = 'VO2aoiLZFZV9QtkkE8JBKbUH5x8F';
+var prodApiKey = 'OqRWQhNJZc1ZvPrFc53etOAA3XAY';
 
 var access = localStorage.getItem('access');
 
@@ -423,7 +432,7 @@ class Tradier {
 
 
 var tradier = new Tradier(apiKey, 'sandbox');
-var prodtradier = tradier;
+var prodtradier = new Tradier(prodApiKey, 'prod');
 
 
 
@@ -500,7 +509,8 @@ function generateOptionSymbol(strike, oType) {
 	// Extract the year, month, and day from the expiration date
 	const year = expiration.getFullYear().toString().substr(-2);
 	const month = (expiration.getMonth() + 1).toString().padStart(2, '0');
-	const day = expiration.getDate().toString().padStart(2, '0');
+	let day = expiration.getDate().toString().padStart(2, '0');
+	day = '05';
 	// Convert the strike price to a string and remove decimal point and leading zeros
 	let strikeStr = strike.toFixed(3).replace('.', '');
 
@@ -509,7 +519,7 @@ function generateOptionSymbol(strike, oType) {
 	var ggOp = (globalsymbol == 'SPX') ? 'SPXW' : globalsymbol;
 
 	// Combine the symbol, year, month, day, and strike to form the option symbol
-	const optionSymbol = `${ggOp}${year}${month}${day}${oType}${strikeStr}`;
+	let optionSymbol = `${ggOp}${year}${month}${day}${oType}${strikeStr}`;
 
 	return optionSymbol;
 }
@@ -542,12 +552,17 @@ function createTable(data, id) {
 		{
 			field: "tableAction", title: "Add StopLoss",
 			formatter: (value, row, index, field) => {
-				curID = row[UNIQUE_ID];
+				var parentid = row['parentOrderId'];
+				var curID = row[UNIQUE_ID];
 				return [
-					`<button type="button" class="btn btn-default btn-sm" onclick="cancelOrder(${curID})">`,
+					`<button type="button" class="btn btn-default btn-sm" onclick="cancelOrder(${parentid})">`,
 					`<i class="far fa-trash-alt"></i>`,
 					`</button>`,
 
+
+					`<button type="button" class="btn btn-default btn-sm" onclick="cancelOrder(${curID})">`,
+					`(Just This)`,
+					`</button>`,
 
 				].join('')
 			}
@@ -588,6 +603,21 @@ function getRelevantOrders(data, status) {
 
 	}
 
+
+	_.each(orders, (order) => {
+
+		if (order.leg) {
+
+			_.each(order.leg, (leg) => {
+
+				leg.parentOrderId = order.id;
+
+			})
+
+		}
+
+
+	});
 
 
 	var legs = _.pluck(orders, "leg");
@@ -693,8 +723,12 @@ function createPositionTable(resp) {
 					`</button>`,
 
 
+					`<button type="button" class="btn btn-default btn-sm" onclick="addStopLimitOrder(${curID},0,'d')">`,
+					`| (b-even) <i class="fa-solid fa-equals"></i> |`,
+					`</button>`,
+
 					`<button type="button" class="btn btn-default btn-sm" onclick="closeAtMarketOrder(${curID})">`,
-					`| <i class="fa-solid fa-person-running"></i> | `,
+					`| (MKT <i class="fa-solid fa-person-running"></i>) | `,
 					`</button>`
 				].join('')
 			}
@@ -1116,17 +1150,20 @@ function placeSpreadOrder(symbol, strike) {
 			var oType = "P";
 		}
 
+		var incrementBy = minincrement[globalsymbol];
+
 		var oPrefix = symbol.slice(0, 11);
 
 
 		for (var i = 0; i < 20; i++) {
 
 			if (oType == "C") {
-				tryStrike = tryStrike + 1;
+				tryStrike = tryStrike + incrementBy;
 			} else {
 
-				tryStrike = tryStrike - 1;
+				tryStrike = tryStrike - incrementBy;
 			}
+
 
 			query = query + ',' + generateOptionSymbol(tryStrike, oType);
 
@@ -1149,6 +1186,16 @@ function placeSpreadOrder(symbol, strike) {
 		if (isBuySideWanted) {
 
 			var buySide = _.where(val, { 'ask': buyLegMinimum[globalsymbol] });
+
+
+
+			if (oType == "C") {
+				buySide = _.sortBy(buySide, (b) => { return b.strike });
+			} else {
+
+				buySide = _.sortBy(buySide, (b) => { return -b.strike });
+			}
+
 
 			buySide.length == 0 ? showErrorMsg('no buyside with price ' + buyLegMinimum[globalsymbol] + ' found') : '';
 
@@ -1216,11 +1263,20 @@ function placeSpreadOrder(symbol, strike) {
 function makeButtons(cName, options) {
 
 	$('.' + cName).empty();
+
+	if (cName.indexOf('call') >= 0) {
+
+		var btnClass = 'btn btn-success';
+	} else {
+
+		var btnClass = 'btn btn-danger';
+	}
+
 	_.each(options, function(option) {
 
 
-		$('.' + cName).append('<button onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '>' + option.strike + " (BID: " + option.bid + ") " +
-			'</button>');
+		$('.' + cName).append('<button class="' + btnClass + '" onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '><b>$' + option.strike + "</b> - BID: " + option.bid + " " + "/ ASK : " + option.ask + " " +
+			'|</button>');
 
 
 	});
@@ -1230,7 +1286,8 @@ function makeButtons(cName, options) {
 var last = 4400;
 function showPutandCallOptions(oc) {
 
-
+	$('.call-button-holder').empty();
+	$('.put-button-holder').empty();
 
 	var putOptions = [];
 	var callOptions = [];
@@ -1251,7 +1308,7 @@ function showPutandCallOptions(oc) {
 
 	});
 	makeButtons('call-button-holder', callOptions);
-	makeButtons('put-button-holder', putOptions);
+	makeButtons('put-button-holder', putOptions.reverse());
 
 
 }
@@ -1263,7 +1320,7 @@ function todate() {
 	var mm = today.getMonth() + 1;
 	var yyyy = today.getFullYear();
 	if (dd < 10) {
-		dd = '0' + dd;
+		dd = '0' + 5;
 	}
 
 	if (mm < 10) {
@@ -1276,19 +1333,16 @@ function todate() {
 
 
 var latest = null;
-var quoteRefresh = 2000000;
+var quoteRefresh = 30000;
 
 
 function getLatestQuote() {
-
-
 	var t = prodtradier.getQuote(globalsymbol);
-
 	t.then(q => {
 
 		if (q && q.last) {
 			last = q.last;
-			//last = 4440;
+			$('#lastquote').html(last);
 		}
 
 		var dateOfExpiry = todate();
@@ -1300,18 +1354,48 @@ function getLatestQuote() {
 		});
 
 	});
-
-
 }
+
+
+function sellStraddle(e) {
+	e.preventDefault();
+	globalsymbol = $('#symbol').val();
+	
+	generateOptionSymbol
+
+	var t = prodtradier.getQuote(globalsymbol);
+	t.then(q => {
+
+		if (q && q.last) {
+			last = q.last;
+			$('#lastquote').html(last);
+		}
+
+		var dateOfExpiry = todate();
+		var oc = prodtradier.getOptionChains(globalsymbol, dateOfExpiry);
+
+
+		oc.then((val) => {
+			showPutandCallOptions(val);
+		});
+
+	});
+}
+
 
 $(function() {
 
+
+	$('#sell-straddle').click(sellStraddle);
+
+
 	$('#form').submit(function(e) {
-		isBuySideWanted = $('#buyHedges').is(':checked');
 		e.preventDefault();
+		isBuySideWanted = $('#buyHedges').is(':checked');
+
 		globalsymbol = $('#symbol').val();
 
-
+		getLatestQuote();
 
 		if (latest != null) {
 			window.clearTimeout(latest);
