@@ -1,6 +1,22 @@
 
+var globalsymbol = 'SPX';
+var defaultQty = 1;
+
+
+var buyLegMinimum = {
+
+	'SPX': .1,
+	'SPY': .01,
+	'TSLA': 1
+
+};
+
+var reloadOrderInterval = 2000;
 
 var accountNumber = 'VA94962097';
+var prodaccountNumber = '6YA26930';
+var apiKey = 'yG1tBcGioyqA0J6CA1oW3IJ4svAw';
+var prodApiKey = 'VO2aoiLZFZV9QtkkE8JBKbUH5x8F';
 
 var access = localStorage.getItem('access');
 
@@ -406,7 +422,8 @@ class Tradier {
 }
 
 
-var tradier = new Tradier('yG1tBcGioyqA0J6CA1oW3IJ4svAw', 'sandbox');
+var tradier = new Tradier(apiKey, 'sandbox');
+var prodtradier = tradier;
 
 
 
@@ -425,8 +442,6 @@ function getPositions() {
 
 getPositions();
 
-tradier.getPositions(accountNumber);
-tradier.getAccountOrders(accountNumber);
 
 
 function reLoadOrders() {
@@ -441,50 +456,18 @@ function reLoadOrders() {
 
 }
 
-
 reLoadOrders();
+//setInterval(reLoadOrders, reloadOrderInterval);
 
 
 
-var strikeWanted = 4375;
-
-var optionSymbol = 'SPXW';
-
-var oType = "C";
-
-
-var today = new Date();
-var dd = today.getDate();
-
-var mm = today.getMonth() + 1;
-var yyyy = today.getFullYear();
-if (dd < 10) {
-	dd = '0' + dd;
-}
-
-if (mm < 10) {
-	mm = '0' + mm;
-}
-today = 23 + '' + mm + '' + dd;
-
-var number = strikeWanted * 1000;
-let strike = number.toString().padStart(8, '0');
-
-var symbol = optionSymbol + today + oType + strike;
-
-
-tradier.getQuote(symbol);
-
-var buyToOpenLeg = [];
-
-var tryStrike = strikeWanted;
 
 var trade = tradier;
 
 
 /*tradier.createOrder(accountNumber, {
 	'class': 'multileg',
-	'symbol': 'SPY',
+	'symbol': globalsymbol,
 	'type': 'credit',
 	'duration': 'day',
 	'price': '23.2',
@@ -499,7 +482,7 @@ var trade = tradier;
 
 tradier.createOrder(accountNumber, {
 	'class': 'option',
-	'symbol': 'SPY',
+	'symbol': globalsymbol,
 	'option_symbol': 'SPY230630C00436000',
 	'side': 'buy_to_open',
 	'quantity': '1',
@@ -510,38 +493,29 @@ tradier.createOrder(accountNumber, {
 	'tag': today
 })
 */
-function getStrikeForOption(strikeWanted) {
-	var number = strikeWanted * 1000;
-	let strike = number.toString().padStart(8, '0');
-	return strike;
+function generateOptionSymbol(strike, oType) {
 
+
+	let expiration = new Date();
+	// Extract the year, month, and day from the expiration date
+	const year = expiration.getFullYear().toString().substr(-2);
+	const month = (expiration.getMonth() + 1).toString().padStart(2, '0');
+	const day = expiration.getDate().toString().padStart(2, '0');
+	// Convert the strike price to a string and remove decimal point and leading zeros
+	let strikeStr = strike.toFixed(3).replace('.', '');
+
+	strikeStr = "00000000".substring(strikeStr.length) + strikeStr;
+
+	var ggOp = (globalsymbol == 'SPX') ? 'SPXW' : globalsymbol;
+
+	// Combine the symbol, year, month, day, and strike to form the option symbol
+	const optionSymbol = `${ggOp}${year}${month}${day}${oType}${strikeStr}`;
+
+	return optionSymbol;
 }
 
 
 
-
-for (var i = 0; (i < 10 && buyToOpenLeg.length == 0); i++) {
-
-	if (oType == "C") {
-		tryStrike = tryStrike + 5;
-	} else {
-
-		tryStrike = tryStrike - 5;
-	}
-
-	var symbol = optionSymbol + today + oType + getStrikeForOption(tryStrike);
-
-	var q = tradier.getQuote(symbol);
-
-	q.then((val) => {
-		if (val.ask == .1) {
-			buyToOpenLeg.push(val);
-
-		}
-
-	});
-
-}
 
 
 
@@ -555,7 +529,9 @@ function createTable(data, id) {
 	const columns = [
 		{ field: "id", title: "ID" },
 		{ field: "option_symbol", title: "SYMBOL" },
+		{ field: "strike", title: "strike" },
 		{ field: "side", title: "side" },
+		{ field: "type", title: "Call or Put" },
 		{ field: "status", title: "status" },
 		{ field: "transaction_date", title: "transaction_date" },
 
@@ -564,7 +540,7 @@ function createTable(data, id) {
 		{ field: "reason_description", title: "reason_description" },
 
 		{
-			field: "tableAction", title: "Action",
+			field: "tableAction", title: "Add StopLoss",
 			formatter: (value, row, index, field) => {
 				curID = row[UNIQUE_ID];
 				return [
@@ -604,15 +580,26 @@ function createTable(data, id) {
 function getRelevantOrders(data, status) {
 	var today = new Date();
 
-	var legs = _.pluck(data.account.orders.order, "leg");
+	var orders = data.account.orders.order;
+
+	if (!_.isArray(data.account.orders.order)) {
+
+		orders = [data.account.orders.order];
+
+	}
 
 
 
-	var ndata = _.union(data.account.orders.order, _.flatten(_.compact(legs)));
+	var legs = _.pluck(orders, "leg");
+
+
+
+	var ndata = _.union(orders, _.flatten(_.compact(legs)));
 
 	_.each(ndata, function(leg) {
 
 		leg.price = (!leg.price) ? leg.avg_fill_price : leg.price;
+
 
 	});
 
@@ -630,6 +617,17 @@ function getRelevantOrders(data, status) {
 
 	});
 
+	_.each(rdata, function(leg) {
+
+		leg.quantity = (leg.side.indexOf('sell') > -1) ? leg.quantity * -1 : leg.quantity;
+
+		leg.type = (leg.option_symbol.slice(6).indexOf("C") > -1) ? "CALL" : "PUT";
+
+		leg.strike = parseInt(leg.option_symbol.slice(-8)) / 1000;
+
+
+	});
+
 	_.sortBy(rdata, function(o) { return o.transaction_date; });
 
 	return rdata;
@@ -643,10 +641,17 @@ function createPositionTable(resp) {
 
 	var data = myPositions = resp.account.positions.position;
 
-	_.each(myPositions, (position) => {
+	/*if (_.isObject(data)) {
+
+		data = [data];
+	}*/
+
+
+	_.each(data, (position) => {
 
 		position.cost_basis = (((position.cost_basis / position.quantity)) / 100).toFixed(2);
-
+		position.type = (position.symbol.slice(6).indexOf("C") > -1) ? "CALL" : "PUT";
+		position.strike = parseInt(position.symbol.slice(-8)) / 100;
 	});
 
 	const theTable = $('#' + 'Positions');
@@ -655,6 +660,8 @@ function createPositionTable(resp) {
 	const columns = [
 		{ field: "id", title: "ID" },
 		{ field: "symbol", title: "symbol" },
+		{ field: "strike", title: "strike" },
+		{ field: "type", title: "Call/PUT" },
 		{ field: "quantity", title: "QTY" },
 		{ field: "cost_basis", title: "trade_price" },
 		{ field: "date_acquired", title: "date_acquired" },
@@ -720,18 +727,45 @@ function createPositionTable(resp) {
 
 }
 
+
+var timer = null;
 function createBSTable(data) {
 
-	var canceled = getRelevantOrders(data, 'canceled', 'bs-Cancelled');
-	var filled = getRelevantOrders(data, 'filled', 'bs-Filled');
-	var pending = getRelevantOrders(data, 'pending', 'bs-Working');
-	var rejected = getRelevantOrders(data, 'rejected', 'bs-Rejected');
+	if (data != 'null') {
+
+		var canceled = getRelevantOrders(data, 'canceled', 'bs-Cancelled');
+		var filled = getRelevantOrders(data, 'filled', 'bs-Filled');
+		var pending = getRelevantOrders(data, 'pending', 'bs-Working');
+		var open = getRelevantOrders(data, 'open', 'bs-Working');
+		var rejected = getRelevantOrders(data, 'rejected', 'bs-Rejected');
+		var expired = getRelevantOrders(data, 'expired', 'bs-Rejected');
+
+		pending = _.union(pending, open);
+		rejected = _.union(expired, rejected);
 
 
-	createTable(canceled, 'bs-Cancelled');
-	createTable(filled, 'bs-Filled');
-	createTable(pending, 'bs-Working');
-	createTable(rejected, 'bs-Rejected');
+
+
+
+
+		if (pending.length) {
+
+
+			if (timer != null) {
+				window.clearTimeout(timer);
+				timer = null;
+				timer = window.setInterval(reLoadOrders, reloadOrderInterval);
+			}
+			else {
+				timer = window.setInterval(reLoadOrders, reloadOrderInterval);
+			}
+
+		}
+		createTable(canceled, 'bs-Cancelled');
+		createTable(filled, 'bs-Filled');
+		createTable(pending, 'bs-Working');
+		createTable(rejected, 'bs-Rejected');
+	}
 
 
 }
@@ -743,22 +777,61 @@ function closeAtMarketOrder(pId) {
 
 	var orders = _.where(myOrders, { 'option_symbol': position.symbol, 'status': 'filled' });
 
-	_.each(orders, (order) => {
+	if (/*orders.length*/false) {
+
+		_.each(orders, (order) => {
 
 
-		tradier.createOrder(accountNumber, {
+			var order = tradier.createOrder(accountNumber, {
+				'class': 'option',
+				'symbol': globalsymbol,
+				'option_symbol': order.option_symbol,
+				'side': (order.side == 'sell_to_open') ? 'buy_to_close' : 'sell_to_close',
+				'quantity': Math.abs(order.quantity),
+				'type': 'market',
+				'duration': 'day',
+				'tag': todate()
+			});
+
+
+			order.then(resp => {
+				getPositions();
+				showResponse(resp);
+
+
+			}).catch((err) => {
+				showResponse(err);
+			})
+
+
+		});
+
+	} else {
+
+
+		var order = tradier.createOrder(accountNumber, {
 			'class': 'option',
-			'symbol': 'SPY',
-			'option_symbol': order.option_symbol,
-			'side': (order.side == 'sell_to_open') ? 'buy_to_close' : 'sell_to_close',
-			'quantity': order.quantity,
+			'symbol': globalsymbol,
+			'option_symbol': position.symbol,
+			'side': (position.quantity < 0) ? 'buy_to_close' : 'sell_to_close',
+			'quantity': Math.abs(position.quantity),
 			'type': 'market',
 			'duration': 'day',
-			'tag': today
+			'tag': todate()
+		});
+
+
+		order.then(resp => {
+			getPositions();
+			showResponse(resp);
+
+
+		}).catch((err) => {
+			showResponse(err);
 		})
+	}
 
 
-	});
 
 
 
@@ -770,49 +843,110 @@ function addStopLimitOrder(pId, amt, type) {
 
 	var orders = _.where(myOrders, { 'option_symbol': position.symbol, 'status': 'filled' });
 
-	_.each(orders, (order) => {
+	if (false) {
+
+		_.each(orders, (order) => {
+
+			if (type == 'p') {
+
+				var stop = order.avg_fill_price * (1 + amt);
+
+
+			} else {
+
+				var stop = order.avg_fill_price + amt
+
+			}
+			var limit = stop + (stop * .05);
+			var order = tradier.createOrder(accountNumber, {
+				'class': 'option',
+				'symbol': globalsymbol,
+				'option_symbol': order.option_symbol,
+				'side': (order.side == 'sell_to_open') ? 'buy_to_close' : 'sell_to_close',
+				'quantity': order.quantity,
+				'type': 'stop_limit',
+				'duration': 'day',
+				'price': limit.toFixed(2),
+				'stop': stop.toFixed(2),
+				'tag': todate()
+			})
+
+
+			order.then(resp => {
+				getPositions();
+				showResponse(resp);
+
+
+			}).catch((err) => {
+				showResponse(err);
+			})
+
+		});
+	}
+
+	else {
 
 		if (type == 'p') {
 
-			var stop = order.avg_fill_price * (1 + amt);
+			var stop = parseFloat(position.cost_basis) * (1 + amt);
 
 
 		} else {
 
-			var stop = order.avg_fill_price + amt
+			var stop = parseFloat(position.cost_basis) + amt
 
 		}
-		var limit = stop + .2;
-		tradier.createOrder(accountNumber, {
+
+
+		var limit = stop + (stop * .05);
+
+		var order = tradier.createOrder(accountNumber, {
 			'class': 'option',
-			'symbol': 'SPY',
-			'option_symbol': order.option_symbol,
-			'side': (order.side == 'sell_to_open') ? 'buy_to_close' : 'sell_to_close',
-			'quantity': order.quantity,
-			'type': 'limit',
+			'symbol': globalsymbol,
+			'option_symbol': position.symbol,
+			'side': (position.quantity < 0) ? 'buy_to_close' : 'sell_to_close',
+			'quantity': Math.abs(position.quantity),
+			'type': 'stop_limit',
 			'duration': 'day',
 			'price': limit.toFixed(2),
 			'stop': stop.toFixed(2),
-			'tag': today
+			'tag': todate()
+		});
+
+		getPositions();
+
+
+		order.then(resp => {
+
+			showResponse(resp);
+
+
+		}).catch((err) => {
+			showResponse(err);
 		})
-
-
-	});
-
+	}
 
 
 }
 
 function cancelOrder(orderId) {
 
-	tradier.cancelOrder(accountNumber, orderId);
+	var order = tradier.cancelOrder(accountNumber, orderId);
+
+	order.then(resp => {
+
+		showResponse(resp);
+
+
+	}).catch((err) => {
+		showResponse(err);
+	})
 
 }
 
 
 
 
-console.log(buyToOpenLeg);
 
 
 
@@ -854,7 +988,7 @@ var buyToOpen = [];
 var sellToClose = [];
 var buyToClose = [];
 
-function trade(symbol, dateOfExpiry, strike, type) {
+function trade(symbol, dateOfExpiry, strike, type) {/*
 
 	var contenderForBuy = [];
 	console.log(symbol, dateOfExpiry, strike, type);
@@ -927,85 +1061,156 @@ function trade(symbol, dateOfExpiry, strike, type) {
 
 
 
-			$.ajax({
-				type: 'post',
-				url: 'https://sandbox.tradier.com/v1/accounts/VA94962097/orders',
-				data: {
-					'symbol': 'SPX',
-					'class': 'multileg',
-					'type': 'credit',
-					'duration': 'day',
-					'price': '2.05',
-					'option_symbol[0]': "SPXW230628C04380000",
-					'side[0]': 'sell_to_open',
-					'quantity[0]': '1',
-					'option_symbol[1]': "SPXW230628C04390000",
-					'side[1]': 'buy_to_open',
-					'quantity[1]': '1'
-				},
-				headers: {
-					'Authorization': 'Bearer ' + 'yG1tBcGioyqA0J6CA1oW3IJ4svAw',
-					'Accept': 'application/json'
-				},
-				success: function(data, response, code) {
-
-				}
-			}
-
-			);
 
 
 		}
 	}
 
-	);
+	);*/
 }
 
-function placeSpreadOrder(symbol, strike) {
 
-	var strikeWanted = tryStrike = parseInt(strike);
+function showResponse(resp) {
 
-	var query = symbol;
-
-	if (symbol.slice(6).indexOf("C") > -1) {
-		var oType = "C";
+	if (resp.status == 'ok') {
+		$.toastr.success(JSON.stringify(resp));
+		reLoadOrders();
 	} else {
-		var oType = "P";
-	}
 
-	var oPrefix = symbol.slice(0, 11);
+		try {
+			$.toastr.error("--" + resp.response.data);
+		} catch (e) {
 
+			$.toastr.error("--" + e + '---ERROR - please check network tab asap');
 
-	for (var i = 0; i < 20; i++) {
-
-		if (oType == "C") {
-			tryStrike = tryStrike + 5;
-		} else {
-
-			tryStrike = tryStrike - 5;
 		}
 
-		query = query + ',' + oPrefix + getStrikeForOption(tryStrike);
+	}
 
+};
+
+
+function showErrorMsg(resp) {
+
+
+
+	$.toastr.error("!!!" + resp);
+
+
+};
+
+var isBuySideWanted = $('#buyHedges').is(':checked');
+
+function placeSpreadOrder(symbol, strike) {
+	isBuySideWanted = $('#buyHedges').is(':checked');
+
+	var query = symbol;
+	if (isBuySideWanted) {
+		var strikeWanted = tryStrike = parseInt(strike);
+
+
+
+		if (symbol.slice(6).indexOf("C") > -1) {
+			var oType = "C";
+		} else {
+			var oType = "P";
+		}
+
+		var oPrefix = symbol.slice(0, 11);
+
+
+		for (var i = 0; i < 20; i++) {
+
+			if (oType == "C") {
+				tryStrike = tryStrike + 1;
+			} else {
+
+				tryStrike = tryStrike - 1;
+			}
+
+			query = query + ',' + generateOptionSymbol(tryStrike, oType);
+
+		}
 	}
 
 
 
-
-	var q = tradier.getQuote(query);
+	var q = prodtradier.getQuote(query);
 
 
 
 	q.then(val => {
 
-		var sellSide = _.where(val, { 'symbol': symbol });
-		var buySide = _.where(val, { 'ask': '.6' });
+		if (isBuySideWanted) {
+			var sellSide = _.where(val, { 'symbol': symbol })[0];
+		} else {
+			var sellSide = val;
+		}
+		if (isBuySideWanted) {
+
+			var buySide = _.where(val, { 'ask': buyLegMinimum[globalsymbol] });
+
+			buySide.length == 0 ? showErrorMsg('no buyside with price ' + buyLegMinimum[globalsymbol] + ' found') : '';
+
+			var price = sellSide.bid - buySide[0].ask;
+
+
+			var order = tradier.createOrder(accountNumber, {
+				'class': 'multileg',
+				'symbol': globalsymbol,
+				'type': 'credit',
+				'duration': 'day',
+				'price': price.toFixed(2),
+				'option_symbol[0]': sellSide.symbol,
+				'side[0]': 'sell_to_open',
+				'quantity[0]': defaultQty,
+				'option_symbol[1]': buySide[0].symbol,
+				'side[1]': 'buy_to_open',
+				'quantity[1]': defaultQty,
+				'tag': todate()
+			})
+		}
+
+		else {
+
+			var order = tradier.createOrder(accountNumber, {
+				'class': 'option',
+				'symbol': globalsymbol,
+				'option_symbol': sellSide.symbol,
+				'side': 'sell_to_open',
+				'quantity': defaultQty,
+				'type': 'limit',
+				'duration': 'day',
+				'price': sellSide.bid,
+				'tag': todate()
+			});
+
+
+
+
+
+		}
+
+
+		order.then((resp, data, xyx, hsh) => {
+
+			order;
+
+			showResponse(resp);
+
+
+		}).catch((err) => {
+			showResponse(err);
+		})
+
 
 
 	});
 
 
 }
+
+
 
 
 function makeButtons(cName, options) {
@@ -1014,7 +1219,7 @@ function makeButtons(cName, options) {
 	_.each(options, function(option) {
 
 
-		$('.' + cName).append('<button onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '>' + option.strike + " (" + option.bid + ") " +
+		$('.' + cName).append('<button onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '>' + option.strike + " (BID: " + option.bid + ") " +
 			'</button>');
 
 
@@ -1022,17 +1227,19 @@ function makeButtons(cName, options) {
 
 }
 
-
+var last = 4400;
 function showPutandCallOptions(oc) {
 
-	var last = 4400;
+
 
 	var putOptions = [];
 	var callOptions = [];
 
+	var percent = (isBuySideWanted) ? .01 : .03;
+
 	_.each(oc.option, function(option) {
 
-		if (Math.abs(option.strike - last) <= .01 * last) {
+		if (Math.abs(option.strike - last) <= percent * last) {
 
 			if (option.symbol.slice(6).indexOf("P") > -1) {
 				putOptions.push(option);
@@ -1062,29 +1269,66 @@ function todate() {
 	if (mm < 10) {
 		mm = '0' + mm;
 	}
-	today = yyyy + '-' + mm + '-' + 30;
+	today = yyyy + '-' + mm + '-' + dd;
 	return today;
 
 }
 
-$(function() {
 
-	$('#form').submit(function(e) {
-		e.preventDefault();
-		var symbol = $('#symbol').val();
-		tradier.getQuote(symbol);
+var latest = null;
+var quoteRefresh = 2000000;
+
+
+function getLatestQuote() {
+
+
+	var t = prodtradier.getQuote(globalsymbol);
+
+	t.then(q => {
+
+		if (q && q.last) {
+			last = q.last;
+			//last = 4440;
+		}
 
 		var dateOfExpiry = todate();
-		var oc = tradier.getOptionChains(symbol, dateOfExpiry);
+		var oc = prodtradier.getOptionChains(globalsymbol, dateOfExpiry);
 
 
 		oc.then((val) => {
 			showPutandCallOptions(val);
 		});
 
+	});
+
+
+}
+
+$(function() {
+
+	$('#form').submit(function(e) {
+		isBuySideWanted = $('#buyHedges').is(':checked');
+		e.preventDefault();
+		globalsymbol = $('#symbol').val();
+
+
+
+		if (latest != null) {
+			window.clearTimeout(latest);
+			latest = null;
+			latest = window.setInterval(getLatestQuote, quoteRefresh);
+		}
+		else {
+			latest = window.setInterval(getLatestQuote, quoteRefresh);
+		}
+
+
+
+
+
 
 	})
-
+	$('#form').submit();
 
 
 });
