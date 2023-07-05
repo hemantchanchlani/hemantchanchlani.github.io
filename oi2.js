@@ -35,7 +35,7 @@ var minimumCredit = {
 };
 
 
-var reloadOrderInterval = 2000;
+var reloadOrderInterval = 2000000;
 
 var accountNumber = 'VA94962097';
 var prodaccountNumber = '6YA26930';
@@ -55,6 +55,23 @@ function urlstringify(data) {
 	return url;
 }
 
+function todate() {
+	var today = new Date();
+
+	var dd = today.getDate();
+	var mm = today.getMonth() + 1;
+	var yyyy = today.getFullYear();
+	if (dd < 10) {
+		dd = '0' + dd;
+	}
+
+	if (mm < 10) {
+		mm = '0' + mm;
+	}
+	today = yyyy + '-' + mm + '-' + dd;
+	return today;
+
+}
 
 
 
@@ -448,6 +465,7 @@ class Tradier {
 
 var tradier = new Tradier(apiKey, 'sandbox');
 var prodtradier = new Tradier(prodApiKey, 'prod');
+var prodtradier = tradier;
 
 
 
@@ -456,8 +474,34 @@ function getPositions() {
 	var positions = tradier.getPositions(accountNumber);
 
 
-	positions.then((val) => {
-		createPositionTable(val);
+
+
+	positions.then((resp) => {
+
+		var positions = [];
+		if (!_.isArray(resp.account.positions.position)) {
+			resp.account.positions.position = [resp.account.positions.position];
+		}
+
+		_.each(resp.account.positions.position, (position) => {
+
+			if (Math.abs(position.quantity) == 1) {
+				positions.push(position);
+			} else {
+
+				for (var count = 0; count < Math.abs(position.quantity); count++) {
+
+					var p = _.clone(position);
+					p.quantity = (position.quantity < 0) ? -1 : 1;
+					positions.push(p);
+				}
+
+
+			}
+
+		});
+
+		createPositionTable(positions);
 
 
 	});
@@ -566,20 +610,21 @@ function createTable(data, id) {
 		{ field: "transaction_date", title: "transaction_date" },
 
 
-		{ field: "reason_description", title: "reason_description" },
+		{ field: "reason_description", title: "Reason" },
 
 		{
 			field: "tableAction", title: "Actions",
 			formatter: (value, row, index, field) => {
 				var parentid = (row['parentOrderId']) ? row['parentOrderId'] : row[UNIQUE_ID];
 				var curID = row[UNIQUE_ID];
+				var oType = row.type;
 				return [
-					`<button type="button" class="btn btn-default btn-sm" onclick="cancelOrder(${parentid})">`,
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="cancelOrder(${parentid})">`,
 					`<i class="far fa-trash-alt"></i>`,
 					`</button>`,
 
 
-					`<button type="button" class="btn btn-default btn-sm" onclick="cancelOrder(${curID})">`,
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="cancelOrder(${curID})">`,
 					`(Just This)`,
 					`</button>`,
 
@@ -594,7 +639,6 @@ function createTable(data, id) {
 			columns: columns,
 			//url: "https://jsonplaceholder.typicode.com/photos",
 			data: data,
-			height: 768,
 			uniqueId: "id",
 			striped: true,
 			pagination: true,
@@ -686,13 +730,10 @@ function getRelevantOrders(data, status) {
 }
 
 
-function createPositionTable(resp) {
+function createPositionTable(positions) {
 
-	if (!_.isArray(resp.account.positions.position)) {
-		resp.account.positions.position = [resp.account.positions.position];
-	}
 
-	var data = myPositions = resp.account.positions.position;
+	var data = myPositions = positions;
 
 	if (!data) {
 
@@ -722,35 +763,47 @@ function createPositionTable(resp) {
 			field: "tableAction", title: "Action",
 			formatter: (value, row, index, field) => {
 				curID = row.id;
+				var oType = row.type;
 				return [
 
-					`<button type="button" class="btn btn-default btn-sm" onclick="addStopLimitOrder(${curID},.20,'p')">`,
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},.20,'p')">`,
 					`| 20 <i class="fa-solid fa-percent"></i> |`,
 					`</button>`,
 
-					`<button type="button" class="btn btn-default btn-sm" onclick="addStopLimitOrder(${curID},.25,'p')">`,
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},.25,'p')">`,
 					`| 25 <i class="fa-solid fa-percent"></i> |`,
 					`</button>`,
 
-					`<button type="button" class="btn btn-default btn-sm" onclick="addStopLimitOrder(${curID},.30,'p')">`,
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},.30,'p')">`,
 					`| 30 <i class="fa-solid fa-percent"></i> |`,
 					`</button>`,
 
-					`<button type="button" class="btn btn-default btn-sm" onclick="addStopLimitOrder(${curID},1,'d')">`,
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},.50,'p')">`,
+					`| 50 <i class="fa-solid fa-percent"></i> |`,
+					`</button>`,
+
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},1,'d')">`,
 					`| 100 <i class="fa-solid fa-dollar-sign"></i> |`,
 					`</button>`,
 
-					`<button type="button" class="btn btn-default btn-sm" onclick="addStopLimitOrder(${curID},2,'d')">`,
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},2,'d')">`,
 					`| 200 <i class="fa-solid fa-dollar-sign"></i> |`,
 					`</button>`,
 
 
-					`<button type="button" class="btn btn-default btn-sm" onclick="addStopLimitOrder(${curID},0,'d')">`,
-					`| (b-even) <i class="fa-solid fa-equals"></i> |`,
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},0,'d')">`,
+					`|(b-even-stop-limit)|`,
 					`</button>`,
 
-					`<button type="button" class="btn btn-default btn-sm" onclick="closeAtMarketOrder(${curID})">`,
-					`| (MKT <i class="fa-solid fa-person-running"></i>) | `,
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},0,'d', true)">`,
+					`|(b-even-limit)|`,
+					`</button>`,
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="closeAtMarketOrder(${curID})">`,
+					`|(MKT)| `,
 					`</button>`
 				].join('')
 			}
@@ -763,7 +816,7 @@ function createPositionTable(resp) {
 			columns: columns,
 			//url: "https://jsonplaceholder.typicode.com/photos",
 			data: data,
-			height: 768,
+
 			uniqueId: "id",
 			striped: true,
 			pagination: true,
@@ -900,7 +953,7 @@ function closeAtMarketOrder(pId) {
 
 }
 
-function addStopLimitOrder(pId, amt, type) {
+function addStopLimitOrder(pId, amt, type, l) {
 
 	var position = _.where(myPositions, { 'id': pId })[0];
 
@@ -969,22 +1022,24 @@ function addStopLimitOrder(pId, amt, type) {
 			'option_symbol': position.symbol,
 			'side': (position.quantity < 0) ? 'buy_to_close' : 'sell_to_close',
 			'quantity': Math.abs(position.quantity),
-			'type': 'stop_limit',
+			'type': (l) ? 'limit' : 'stop_limit',
 			'duration': 'day',
 			'price': limit.toFixed(2),
 			'stop': stop.toFixed(2),
 			'tag': todate()
 		});
 
-		getPositions();
 
 
 		order.then(resp => {
 
+			getPositions();
 			showResponse(resp);
 
 
 		}).catch((err) => {
+
+			getPositions();
 			showResponse(err);
 		})
 	}
@@ -1145,7 +1200,7 @@ function showResponse(resp) {
 			$.toastr.error("--" + resp.response.data);
 		} catch (e) {
 
-			$.toastr.error("--" + e + '---ERROR - please check network tab asap');
+			$.toastr.error("--" + e + '---ERROR - please check network tab asap >> respo = ' + resp);
 
 		}
 
@@ -1158,7 +1213,7 @@ function showErrorMsg(resp) {
 
 
 
-	$.toastr.error("!!!" + resp);
+	$.toastr.error("!!!  " + resp + "  !!!");
 
 
 };
@@ -1169,6 +1224,7 @@ function placeSpreadOrder(symbol, strikeChosen) {
 
 	var tryStrike = parseFloat(strikeChosen);
 	isBuySideWanted = $('#buyHedges').is(':checked');
+	isBuyMarket = !$('#buy-limit').is(':checked');
 
 	var query = symbol;
 	if (isBuySideWanted) {
@@ -1243,7 +1299,7 @@ function placeSpreadOrder(symbol, strikeChosen) {
 			var order = tradier.createOrder(accountNumber, {
 				'class': 'multileg',
 				'symbol': globalsymbol,
-				'type': 'credit',
+				'type': (isBuyMarket) ? 'market' : 'credit',
 				'duration': 'day',
 				'price': price.toFixed(2),
 				'option_symbol[0]': sellSide.symbol,
@@ -1264,9 +1320,9 @@ function placeSpreadOrder(symbol, strikeChosen) {
 				'option_symbol': sellSide.symbol,
 				'side': 'sell_to_open',
 				'quantity': defaultQty,
-				'type': 'limit',
+				'type': (isBuyMarket) ? 'market' : 'limit',
 				'duration': 'day',
-				'price': sellSide.bid * .99,
+				'price': (sellSide.bid * .99).toFixed(2),
 				'tag': todate()
 			});
 
@@ -1358,27 +1414,10 @@ function showPutandCallOptions(oc) {
 
 }
 
-function todate() {
-	var today = new Date();
-
-	var dd = today.getDate();
-	var mm = today.getMonth() + 1;
-	var yyyy = today.getFullYear();
-	if (dd < 10) {
-		dd = '0' + dd;
-	}
-
-	if (mm < 10) {
-		mm = '0' + mm;
-	}
-	today = yyyy + '-' + mm + '-' + dd;
-	return today;
-
-}
 
 
 var latest = null;
-var quoteRefresh = 1000;
+var quoteRefresh = 1000000;
 
 
 function getLatestQuote() {
@@ -1454,6 +1493,8 @@ function placeStrangleLeg(symbol, strikeChosen) {
 
 	var tryStrike = parseFloat(strikeChosen);
 	isBuySideWanted = $('#buyHedges').is(':checked');
+	isBuyMarket = !$('#buy-limit').is(':checked');
+
 
 	var query = symbol;
 
@@ -1531,38 +1572,43 @@ function placeStrangleLeg(symbol, strikeChosen) {
 
 		buySide.length == 0 ? showErrorMsg('no buyside with price ' + buyLegMinimum[globalsymbol] + ' found') : '';
 
-		var price = sellSide.bid - buySide[0].ask;
+		if (buySide.length && sellSide) {
+
+			var price = sellSide.bid - buySide[0].ask;
 
 
-		var order = tradier.createOrder(accountNumber, {
-			'class': 'multileg',
-			'symbol': globalsymbol,
-			'type': 'credit',
-			'duration': 'day',
-			'price': price.toFixed(2),
-			'option_symbol[0]': sellSide.symbol,
-			'side[0]': 'sell_to_open',
-			'quantity[0]': defaultQty,
-			'option_symbol[1]': buySide[0].symbol,
-			'side[1]': 'buy_to_open',
-			'quantity[1]': defaultQty,
-			'tag': todate()
-		})
+			var order = tradier.createOrder(accountNumber, {
+				'class': 'multileg',
+				'symbol': globalsymbol,
+				'type': (isBuyMarket) ? 'market' : 'credit',
+				'duration': 'day',
+				'price': price.toFixed(2),
+				'option_symbol[0]': sellSide.symbol,
+				'side[0]': 'sell_to_open',
+				'quantity[0]': defaultQty,
+				'option_symbol[1]': buySide[0].symbol,
+				'side[1]': 'buy_to_open',
+				'quantity[1]': defaultQty,
+				'tag': todate()
+			})
 
 
 
 
-		order.then((resp, data, xyx, hsh) => {
+			order.then((resp, data, xyx, hsh) => {
 
-			order;
+				order;
 
-			showResponse(resp);
+				showResponse(resp);
 
 
-		}).catch((err) => {
-			showResponse(err);
-		})
+			}).catch((err) => {
+				showResponse(err);
+			})
+		} else {
 
+			showErrorMsg('no price  found for ' + oType);
+		}
 
 
 	});
