@@ -88,6 +88,8 @@
 					<button class="btn btn-dark" id='sell-starangle' type="button">Sell Strangle</button>
 					<button type="button" id="strangle-put" class="btn btn-danger">Strangle : Put Leg</button>
 					<button type="button" id="strangle-call" class="btn btn-success">Strangle : Call Leg</button>
+					<button type="button"  onclick="getPositions()"  id="strangle-call" class="btn btn-info">Reload Positions</button>
+					<button type="button" id=""  onclick="reLoadOrders()" class="btn btn-info">Reload Open Orders</button>
 					
 					<span id="lastquote" class="label label-danger"></span></h1>
 
@@ -146,7 +148,7 @@
 				</h2>
 				<div id="flush-collapseThree" class="accordion-collapse collapse" data-bs-parent="#optionsTable">
 					<div class="accordion-body">
-						<table id="bs-Filled" class="table table-striped table-blue" data-show-columns="true">
+						<table id="bs-Filled" class="table table-striped table-blue" >
 						</table>
 					</div>
 				</div>

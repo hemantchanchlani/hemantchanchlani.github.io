@@ -470,7 +470,7 @@ getPositions();
 
 function reLoadOrders() {
 	var orders = tradier.getOrders(accountNumber);
-
+	getPositions();
 
 	orders.then((val) => {
 		createBSTable(val);
@@ -694,7 +694,10 @@ function createPositionTable(resp) {
 
 	var data = myPositions = resp.account.positions.position;
 
+	if (!data) {
 
+		data = [];
+	}
 
 	_.each(data, (position) => {
 
@@ -1131,10 +1134,11 @@ function trade(symbol, dateOfExpiry, strike, type) {/*
 
 
 function showResponse(resp) {
-
+	getPositions();
 	if (resp.status == 'ok') {
 		$.toastr.success(JSON.stringify(resp));
 		reLoadOrders();
+
 	} else {
 
 		try {
@@ -1209,6 +1213,7 @@ function placeSpreadOrder(symbol, strikeChosen) {
 			var sellSide = _.where(val, { 'symbol': symbol })[0];
 		} else {
 			var sellSide = val;
+
 		}
 		if (isBuySideWanted) {
 
@@ -1231,6 +1236,8 @@ function placeSpreadOrder(symbol, strikeChosen) {
 			buySide.length == 0 ? showErrorMsg('no buyside with price ' + buyLegMinimum[globalsymbol] + ' found') : '';
 
 			var price = sellSide.bid - buySide[0].ask;
+
+			price = price * .99;
 
 
 			var order = tradier.createOrder(accountNumber, {
@@ -1259,7 +1266,7 @@ function placeSpreadOrder(symbol, strikeChosen) {
 				'quantity': defaultQty,
 				'type': 'limit',
 				'duration': 'day',
-				'price': sellSide.bid,
+				'price': sellSide.bid * .99,
 				'tag': todate()
 			});
 
