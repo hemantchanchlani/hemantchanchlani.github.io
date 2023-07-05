@@ -6,7 +6,9 @@ var defaultQty = 1;
 var minincrement = {
 
 	'SPY': 1,
+	'IWM': 1,
 	'SPX': 5,
+	'RUT': 5,
 	'TSLA': 2.5
 
 }
@@ -15,10 +17,23 @@ var minincrement = {
 var buyLegMinimum = {
 
 	'SPX': .1,
-	'SPY': .04,
+	'RUT': .1,
+	'IWM': .01,
+	'SPY': .02,
 	'TSLA': 1
 
 };
+
+
+var minimumCredit = {
+
+	'SPX': 1.1,
+	'RUT': 1,
+	'IWM': .11,
+	'SPY': .11,
+
+};
+
 
 var reloadOrderInterval = 2000;
 
@@ -33,7 +48,7 @@ var myPositions, myOrders;
 
 function urlstringify(data) {
 
-	var url = Object.keys(data).map(function(k) {
+	var url = Object.keys(data).map(function (k) {
 		return encodeURIComponent(k) + '=' + encodeURIComponent(data[k])
 	}).join('&');
 
@@ -58,7 +73,7 @@ function parseQuery(url, params) {
 function footer(tooltipItems) {
 	let sum = 0;
 
-	tooltipItems.forEach(function(tooltipItem) {
+	tooltipItems.forEach(function (tooltipItem) {
 		sum += tooltipItem.parsed.y;
 	});
 	return 'Sum: ' + sum;
@@ -538,21 +553,25 @@ function createTable(data, id) {
 
 	const columns = [
 		{ field: "id", title: "ID" },
+		{ field: "parentOrderId", title: "Parent Order Id" },
 		{ field: "option_symbol", title: "SYMBOL" },
 		{ field: "strike", title: "strike" },
-		{ field: "side", title: "side" },
+
 		{ field: "type", title: "Call or Put" },
+		{ field: "quantity", title: "quantity" },
+
+		{ field: "price", title: "price" },
+		{ field: "side", title: "side" },
 		{ field: "status", title: "status" },
 		{ field: "transaction_date", title: "transaction_date" },
 
-		{ field: "quantity", title: "quantity" },
-		{ field: "price", title: "price" },
+
 		{ field: "reason_description", title: "reason_description" },
 
 		{
-			field: "tableAction", title: "Add StopLoss",
+			field: "tableAction", title: "Actions",
 			formatter: (value, row, index, field) => {
-				var parentid = row['parentOrderId'];
+				var parentid = (row['parentOrderId']) ? row['parentOrderId'] : row[UNIQUE_ID];
 				var curID = row[UNIQUE_ID];
 				return [
 					`<button type="button" class="btn btn-default btn-sm" onclick="cancelOrder(${parentid})">`,
@@ -626,7 +645,7 @@ function getRelevantOrders(data, status) {
 
 	var ndata = _.union(orders, _.flatten(_.compact(legs)));
 
-	_.each(ndata, function(leg) {
+	_.each(ndata, function (leg) {
 
 		leg.price = (!leg.price) ? leg.avg_fill_price : leg.price;
 
@@ -635,7 +654,7 @@ function getRelevantOrders(data, status) {
 
 	myOrders = ndata;
 
-	rdata = _.filter(ndata, function(order) {
+	rdata = _.filter(ndata, function (order) {
 
 		var orderCheck = (order.status == status && !order.leg) ? true : false;
 
@@ -647,7 +666,7 @@ function getRelevantOrders(data, status) {
 
 	});
 
-	_.each(rdata, function(leg) {
+	_.each(rdata, function (leg) {
 
 		leg.quantity = (leg.side.indexOf('sell') > -1) ? leg.quantity * -1 : leg.quantity;
 
@@ -658,7 +677,7 @@ function getRelevantOrders(data, status) {
 
 	});
 
-	_.sortBy(rdata, function(o) { return o.transaction_date; });
+	_.sortBy(rdata, function (o) { return o.transaction_date; });
 
 	return rdata;
 
@@ -671,10 +690,6 @@ function createPositionTable(resp) {
 
 	var data = myPositions = resp.account.positions.position;
 
-	/*if (_.isObject(data)) {
-
-		data = [data];
-	}*/
 
 
 	_.each(data, (position) => {
@@ -786,7 +801,7 @@ function createBSTable(data) {
 
 
 			if (timer != null) {
-				window.clearTimeout(timer);
+				window.clearInterval(timer);
 				timer = null;
 				timer = window.setInterval(reLoadOrders, reloadOrderInterval);
 			}
@@ -794,6 +809,13 @@ function createBSTable(data) {
 				timer = window.setInterval(reLoadOrders, reloadOrderInterval);
 			}
 
+		} else {
+
+			if (timer != null) {
+				window.clearInterval(timer);
+				timer = null;
+
+			}
 		}
 		createTable(canceled, 'bs-Cancelled');
 		createTable(filled, 'bs-Filled');
@@ -1135,12 +1157,13 @@ function showErrorMsg(resp) {
 
 var isBuySideWanted = $('#buyHedges').is(':checked');
 
-function placeSpreadOrder(symbol, strike) {
+function placeSpreadOrder(symbol, strikeChosen) {
+
+	var tryStrike = parseFloat(strikeChosen);
 	isBuySideWanted = $('#buyHedges').is(':checked');
 
 	var query = symbol;
 	if (isBuySideWanted) {
-		var strikeWanted = tryStrike = parseInt(strike);
 
 
 
@@ -1155,7 +1178,7 @@ function placeSpreadOrder(symbol, strike) {
 		var oPrefix = symbol.slice(0, 11);
 
 
-		for (var i = 0; i < 20; i++) {
+		for (var i = 0; i < 30; i++) {
 
 			if (oType == "C") {
 				tryStrike = tryStrike + incrementBy;
@@ -1185,7 +1208,11 @@ function placeSpreadOrder(symbol, strike) {
 		}
 		if (isBuySideWanted) {
 
-			var buySide = _.where(val, { 'ask': buyLegMinimum[globalsymbol] });
+			var buySide = _.filter(val, (oc) => {
+
+				return oc.ask <= buyLegMinimum[globalsymbol];
+
+			});
 
 
 
@@ -1266,16 +1293,16 @@ function makeButtons(cName, options) {
 
 	if (cName.indexOf('call') >= 0) {
 
-		var btnClass = 'btn btn-success';
+		var btnClass = ' btn btn-success ';
 	} else {
 
-		var btnClass = 'btn btn-danger';
+		var btnClass = ' btn btn-danger ';
 	}
 
-	_.each(options, function(option) {
+	_.each(options, function (option) {
 
 
-		$('.' + cName).append('<button class="' + btnClass + '" onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '><b>$' + option.strike + "</b> - BID: " + option.bid + " " + "/ ASK : " + option.ask + " " +
+		$('.' + cName).append('<button class="' + btnClass + option.strike + ' ' + '" onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '><b>$' + option.strike + "</b> - BID: " + option.bid + " " + "/ ASK : " + option.ask + " " +
 			'|</button>');
 
 
@@ -1294,7 +1321,7 @@ function showPutandCallOptions(oc) {
 
 	var percent = (isBuySideWanted) ? .01 : .03;
 
-	_.each(oc.option, function(option) {
+	_.each(oc.option, function (option) {
 
 		if (Math.abs(option.strike - last) <= percent * last) {
 
@@ -1309,6 +1336,13 @@ function showPutandCallOptions(oc) {
 	});
 	makeButtons('call-button-holder', callOptions);
 	makeButtons('put-button-holder', putOptions.reverse());
+
+
+	var strikeChosen = Math.ceil(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+
+	$('.' + strikeChosen).each(function () {
+		$(this).removeClass().addClass("btn btn-warning");
+	});
 
 
 }
@@ -1333,7 +1367,7 @@ function todate() {
 
 
 var latest = null;
-var quoteRefresh = 30000;
+var quoteRefresh = 3000000;
 
 
 function getLatestQuote() {
@@ -1360,8 +1394,7 @@ function getLatestQuote() {
 function sellStraddle(e) {
 	e.preventDefault();
 	globalsymbol = $('#symbol').val();
-	
-	generateOptionSymbol
+
 
 	var t = prodtradier.getQuote(globalsymbol);
 	t.then(q => {
@@ -1371,25 +1404,173 @@ function sellStraddle(e) {
 			$('#lastquote').html(last);
 		}
 
-		var dateOfExpiry = todate();
-		var oc = prodtradier.getOptionChains(globalsymbol, dateOfExpiry);
+		var strikeChosen = Math.ceil(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
 
 
-		oc.then((val) => {
-			showPutandCallOptions(val);
-		});
+		var callSymbol = generateOptionSymbol(strikeChosen, "C");
+		var putSymbol = generateOptionSymbol(strikeChosen, "P");
+		placeSpreadOrder(callSymbol, strikeChosen);
+		placeSpreadOrder(putSymbol, strikeChosen);
 
 	});
 }
 
+sellStrangle = (type) => {
 
-$(function() {
+	globalsymbol = $('#symbol').val();
 
+
+	var t = prodtradier.getQuote(globalsymbol);
+	t.then(q => {
+
+		if (q && q.last) {
+			last = q.last;
+			$('#lastquote').html(last);
+		}
+
+		var strikeChosen = Math.ceil(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+
+		var symbol = generateOptionSymbol(strikeChosen, type);
+
+		placeStrangleLeg(symbol, strikeChosen);
+
+	})
+}
+
+
+
+function placeStrangleLeg(symbol, strikeChosen) {
+
+	var tryStrike = parseFloat(strikeChosen);
+	isBuySideWanted = $('#buyHedges').is(':checked');
+
+	var query = symbol;
+
+	if (symbol.slice(6).indexOf("C") > -1) {
+		var oType = "C";
+	} else {
+		var oType = "P";
+	}
+
+	var incrementBy = minincrement[globalsymbol];
+
+	var oPrefix = symbol.slice(0, 11);
+
+
+	for (var i = 0; i < 30; i++) {
+
+		if (oType == "C") {
+			tryStrike = tryStrike + incrementBy;
+		} else {
+
+			tryStrike = tryStrike - incrementBy;
+		}
+
+
+		query = query + ',' + generateOptionSymbol(tryStrike, oType);
+
+	}
+
+
+
+
+	var q = prodtradier.getQuote(query);
+
+
+
+	q.then(val => {
+
+
+
+		var sellSide = _.filter(val, (oc) => {
+
+			return Math.abs(oc.bid >= minimumCredit[globalsymbol])
+
+
+		});
+
+
+		sellSide = _.sortBy(sellSide, (oc) => {
+
+			return Math.abs(oc.bid - minimumCredit[globalsymbol])
+
+
+		});
+
+		sellSide = sellSide[0];
+
+
+
+		var buySide = _.filter(val, (oc) => {
+
+			return oc.ask <= buyLegMinimum[globalsymbol];
+
+		});
+
+
+
+		if (oType == "C") {
+			buySide = _.sortBy(buySide, (b) => { return b.strike });
+
+		} else {
+
+			buySide = _.sortBy(buySide, (b) => { return -b.strike });
+		}
+
+
+		buySide.length == 0 ? showErrorMsg('no buyside with price ' + buyLegMinimum[globalsymbol] + ' found') : '';
+
+		var price = sellSide.bid - buySide[0].ask;
+
+
+		var order = tradier.createOrder(accountNumber, {
+			'class': 'multileg',
+			'symbol': globalsymbol,
+			'type': 'credit',
+			'duration': 'day',
+			'price': price.toFixed(2),
+			'option_symbol[0]': sellSide.symbol,
+			'side[0]': 'sell_to_open',
+			'quantity[0]': defaultQty,
+			'option_symbol[1]': buySide[0].symbol,
+			'side[1]': 'buy_to_open',
+			'quantity[1]': defaultQty,
+			'tag': todate()
+		})
+
+
+
+
+		order.then((resp, data, xyx, hsh) => {
+
+			order;
+
+			showResponse(resp);
+
+
+		}).catch((err) => {
+			showResponse(err);
+		})
+
+
+
+	});
+
+
+}
+
+
+
+$(function () {
+
+	//null.s;
 
 	$('#sell-straddle').click(sellStraddle);
+	$('#sell-starangle').click(() => { sellStrangle('C'); sellStrangle('P'); });
+	$('#strangle-call').click(() => { sellStrangle('C') });
+	$('#strangle-put').click(() => { sellStrangle('P') });
 
-
-	$('#form').submit(function(e) {
+	$('#get-oc').click(function (e) {
 		e.preventDefault();
 		isBuySideWanted = $('#buyHedges').is(':checked');
 
@@ -1398,7 +1579,7 @@ $(function() {
 		getLatestQuote();
 
 		if (latest != null) {
-			window.clearTimeout(latest);
+			window.clearInterval(latest);
 			latest = null;
 			latest = window.setInterval(getLatestQuote, quoteRefresh);
 		}
@@ -1412,7 +1593,7 @@ $(function() {
 
 
 	})
-	$('#form').submit();
+	$('#get-oc').click();
 
 
 });
