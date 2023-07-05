@@ -688,6 +688,10 @@ function getRelevantOrders(data, status) {
 
 function createPositionTable(resp) {
 
+	if (!_.isArray(resp.account.positions.position)) {
+		resp.account.positions.position = [resp.account.positions.position];
+	}
+
 	var data = myPositions = resp.account.positions.position;
 
 
@@ -1354,7 +1358,7 @@ function todate() {
 	var mm = today.getMonth() + 1;
 	var yyyy = today.getFullYear();
 	if (dd < 10) {
-		dd = '0' + 5;
+		dd = '0' + dd;
 	}
 
 	if (mm < 10) {
@@ -1367,7 +1371,7 @@ function todate() {
 
 
 var latest = null;
-var quoteRefresh = 3000000;
+var quoteRefresh = 1000;
 
 
 function getLatestQuote() {
