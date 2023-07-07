@@ -1,11 +1,13 @@
 
 var globalsymbol = 'SPX';
 var defaultQty = 1;
+var percentofOppo = .5;
 
 
 var minincrement = {
 
 	'SPY': 1,
+	'QQQ': 1,
 	'IWM': 1,
 	'SPX': 5,
 	'RUT': 5,
@@ -19,7 +21,8 @@ var buyLegMinimum = {
 	'SPX': .1,
 	'RUT': .1,
 	'IWM': .01,
-	'SPY': .02,
+	'SPY': .01,
+	'QQQ': .01,
 	'TSLA': 1
 
 };
@@ -31,7 +34,7 @@ var minimumCredit = {
 	'RUT': 1,
 	'IWM': .11,
 	'SPY': .11,
-
+	'QQQ': .11,
 };
 
 
@@ -483,6 +486,7 @@ function getPositions() {
 			resp.account.positions.position = [resp.account.positions.position];
 		}
 
+
 		_.each(resp.account.positions.position, (position) => {
 
 			if (Math.abs(position.quantity) == 1) {
@@ -492,7 +496,7 @@ function getPositions() {
 				for (var count = 0; count < Math.abs(position.quantity); count++) {
 
 					var p = _.clone(position);
-					p.quantity = (position.quantity < 0) ? -1 : 1;
+					p.quantity = (position.quantity < 0) ? (-1 * defaultQty) : defaultQty;
 					positions.push(p);
 				}
 
@@ -508,13 +512,10 @@ function getPositions() {
 
 }
 
-getPositions();
-
 
 
 function reLoadOrders() {
 	var orders = tradier.getOrders(accountNumber);
-	getPositions();
 
 	orders.then((val) => {
 		createBSTable(val);
@@ -569,7 +570,7 @@ function generateOptionSymbol(strike, oType) {
 	const year = expiration.getFullYear().toString().substr(-2);
 	const month = (expiration.getMonth() + 1).toString().padStart(2, '0');
 	let day = expiration.getDate().toString().padStart(2, '0');
-	day = '05';
+
 	// Convert the strike price to a string and remove decimal point and leading zeros
 	let strikeStr = strike.toFixed(3).replace('.', '');
 
@@ -744,7 +745,7 @@ function createPositionTable(positions) {
 
 		position.cost_basis = (((position.cost_basis / position.quantity)) / 100).toFixed(2);
 		position.type = (position.symbol.slice(6).indexOf("C") > -1) ? "CALL" : "PUT";
-		position.strike = parseInt(position.symbol.slice(-8)) / 100;
+		position.strike = parseInt(position.symbol.slice(-8)) / 1000;
 	});
 
 	const theTable = $('#' + 'Positions');
@@ -767,43 +768,53 @@ function createPositionTable(positions) {
 				return [
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},.20,'p')">`,
-					`| 20 <i class="fa-solid fa-percent"></i> |`,
+					`|20 <i class="fa-solid fa-percent"></i>|`,
 					`</button>`,
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},.25,'p')">`,
-					`| 25 <i class="fa-solid fa-percent"></i> |`,
+					`|25 <i class="fa-solid fa-percent"></i>|`,
 					`</button>`,
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},.30,'p')">`,
-					`| 30 <i class="fa-solid fa-percent"></i> |`,
+					`|30 <i class="fa-solid fa-percent"></i>|`,
 					`</button>`,
 
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},.50,'p')">`,
-					`| 50 <i class="fa-solid fa-percent"></i> |`,
+					`|50 <i class="fa-solid fa-percent"></i>|`,
 					`</button>`,
 
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},1,'d')">`,
-					`| 100 <i class="fa-solid fa-dollar-sign"></i> |`,
+					`|100 <i class="fa-solid fa-dollar-sign"></i>|`,
 					`</button>`,
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},2,'d')">`,
-					`| 200 <i class="fa-solid fa-dollar-sign"></i> |`,
+					`|200 <i class="fa-solid fa-dollar-sign"></i>|`,
 					`</button>`,
 
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},0,'d')">`,
-					`|(b-even-stop-limit)|`,
+					`|(stop limit@cost basis)|`,
 					`</button>`,
 
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},0,'d', true)">`,
-					`|(b-even-limit)|`,
+					`|(close @cost basis)|`,
 					`</button>`,
 
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="closeAtAsk(${curID})">`,
+					`|(close @ ask)|`,
+					`</button>`,
+
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="match50OfThis(${curID})">`,
+					`|(Match ~ @50 of opposite)|`,
+					`</button>`,
+
+
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="closeAtMarketOrder(${curID})">`,
-					`|(MKT)| `,
+					`|(close @ market)| `,
 					`</button>`
 				].join('')
 			}
@@ -953,6 +964,162 @@ function closeAtMarketOrder(pId) {
 
 }
 
+
+function match50OfThis(pId) {
+
+	var positionToClose = _.where(myPositions, { 'id': pId })[0];
+
+
+	var oppositeside = _.filter(myPositions, (position) => {
+
+		return (position.quantity < 0 && position.symbol != positionToClose.symbol);
+
+
+	});
+
+	oppositeside = oppositeside[0];
+
+	var query = oppositeside.symbol;
+
+
+	if (positionToClose.symbol.slice(6).indexOf("C") > -1) {
+		var oType = "C";
+	} else {
+		var oType = "P";
+	}
+
+	tryStrike = Math.floor((positionToClose.symbol.slice(-7) / 1000) / minincrement[globalsymbol]) * minincrement[globalsymbol];
+
+
+	var incrementBy = minincrement[globalsymbol];
+
+
+	for (var i = 0; i < 30; i++) {
+		if (oType == "C") {
+			tryStrike = tryStrike + incrementBy;
+		} else {
+
+			tryStrike = tryStrike - incrementBy;
+		}
+
+		query = query + ',' + generateOptionSymbol(tryStrike, oType);
+
+	}
+
+
+
+	var q = prodtradier.getQuote(query);
+
+
+
+
+	q.then(val => {
+
+		var contenders = [];
+
+		var thisSide = _.where(val, { 'symbol': oppositeside.symbol })[0];
+
+		var askOfThis = thisSide.ask;
+
+		var threshhold = askOfThis * percentofOppo;
+
+		_.each(val, (option) => {
+
+			if (option.bid <= threshhold && option.symbol != oppositeside.symbol) {
+
+				contenders.push(option);
+
+			}
+
+
+		});
+
+
+		if (oType == "C") {
+			contenders = _.sortBy(contenders, (b) => { return b.strike });
+		} else {
+
+			contenders = _.sortBy(contenders, (b) => { return -b.strike });
+		}
+
+		var chosenOne = contenders[0];
+
+
+		var limitPrice = (askOfThis - chosenOne.bid) * .95;
+
+
+		var order = tradier.createOrder(accountNumber, {
+			'class': 'multileg',
+			'symbol': globalsymbol,
+			'type': 'market',
+			'duration': 'day',
+			'price': limitPrice.toFixed(2),
+			'option_symbol[0]': positionToClose.symbol,
+			'side[0]': 'buy_to_close',
+			'quantity[0]': defaultQty,
+			'option_symbol[1]': chosenOne.symbol,
+			'side[1]': 'sell_to_open',
+			'quantity[1]': defaultQty,
+			'tag': todate()
+		});
+
+
+		order.then(resp => {
+			showResponse(resp);
+
+		}).catch((err) => {
+			showResponse(err);
+		})
+
+
+	});
+
+
+
+
+}
+
+
+
+function closeAtAsk(pId) {
+
+	var position = _.where(myPositions, { 'id': pId })[0];
+
+	var q = prodtradier.getQuote(position.symbol);
+
+	q.then((val) => {
+
+		var order = tradier.createOrder(accountNumber, {
+			'class': 'option',
+			'symbol': globalsymbol,
+			'option_symbol': position.symbol,
+			'side': (position.quantity < 0) ? 'buy_to_close' : 'sell_to_close',
+			'quantity': Math.abs(position.quantity),
+			'type': 'limit',
+			'duration': 'day',
+			'price': (val.ask * .95).toFixed(2),
+			'stop': (val.ask * .95).toFixed(2),
+			'tag': todate()
+		});
+
+
+
+		order.then(resp => {
+
+
+			showResponse(resp);
+
+
+		}).catch((err) => {
+
+
+			showResponse(err);
+		})
+
+	});
+
+}
+
 function addStopLimitOrder(pId, amt, type, l) {
 
 	var position = _.where(myPositions, { 'id': pId })[0];
@@ -1033,13 +1200,11 @@ function addStopLimitOrder(pId, amt, type, l) {
 
 		order.then(resp => {
 
-			getPositions();
 			showResponse(resp);
 
 
 		}).catch((err) => {
 
-			getPositions();
 			showResponse(err);
 		})
 	}
@@ -1106,93 +1271,12 @@ var buyToOpen = [];
 var sellToClose = [];
 var buyToClose = [];
 
-function trade(symbol, dateOfExpiry, strike, type) {/*
-
-	var contenderForBuy = [];
-	console.log(symbol, dateOfExpiry, strike, type);
-
-
-	$.ajax({
-		type: 'get',
-		url: 'https://sandbox.tradier.com/v1/markets/options/chains',
-		data: {
-			'symbol': symbol,
-			'expiration': dateOfExpiry,
-			'greeks': 'true'
-		},
-		headers: {
-			'Authorization': 'Bearer ' + access,
-			'Accept': 'application/json'
-		},
-		success: function(data, response, code) {
-			calls = [];
-			puts = [];
-			supportNumbers = [];
-			resistancetNumbers = [];
-			changeinCall_OI = [];
-			changeinPut_OI = [];
-
-
-			var options = data.options.option;
-
-
-			options.forEach(function(option, i) {
-				if (option.symbol.slice(6).indexOf(type) > -1) {
-					if (option.strike == strike) {
-						option.strikeLabel = option.strike + '';
-						sellToOpen.push(option);
-					}
-
-
-					if (type == "P" && option.strike < strike) {
-						if (Math.abs(option.strike - strike) <= 70 && option.ask == .1) {
-							contenderForBuy.push(option);
-						}
-					}
-
-
-					if (type == "C" && option.strike > strike) {
-						if (Math.abs(option.strike - strike) <= 70 && option.ask == .1) {
-							contenderForBuy.push(option);
-						}
-					}
-				}
-
-
-
-			});
-
-
-			if (type == "C") {
-				buyToOpen.push(_.min(contenderForBuy, function(o) {
-					return o.strike;
-				})
-				);
-
-
-			} else {
-				buyToOpen.push(_.max(contenderForBuy, function(o) {
-					return o.strike;
-				})
-				);
-			}
-
-
-
-
-
-		}
-	}
-
-	);*/
-}
-
 
 function showResponse(resp) {
-	getPositions();
+
 	if (resp.status == 'ok') {
 		$.toastr.success(JSON.stringify(resp));
-		reLoadOrders();
+
 
 	} else {
 
@@ -1205,6 +1289,9 @@ function showResponse(resp) {
 		}
 
 	}
+
+	getPositions();
+	reLoadOrders();
 
 };
 
@@ -1369,8 +1456,8 @@ function makeButtons(cName, options) {
 	_.each(options, function (option) {
 
 
-		$('.' + cName).append('<button class="' + btnClass + option.strike + ' ' + '" onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '><b>$' + option.strike + "</b> - BID: " + option.bid + " " + "/ ASK : " + option.ask + " " +
-			'|</button>');
+		$('.' + cName).append('<button class="' + btnClass + option.strike + ' ' + '" onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '><b>$' + option.strike + "</b>-" + option.bid + "/" + option.ask + " " +
+			'</button>');
 
 
 	});
@@ -1378,7 +1465,7 @@ function makeButtons(cName, options) {
 }
 
 var last = 4400;
-function showPutandCallOptions(oc) {
+function showPutandCallOptions(oc, resp) {
 
 	$('.call-button-holder').empty();
 	$('.put-button-holder').empty();
@@ -1386,31 +1473,35 @@ function showPutandCallOptions(oc) {
 	var putOptions = [];
 	var callOptions = [];
 
-	var percent = (isBuySideWanted) ? .01 : .03;
+	var percent = (isBuySideWanted) ? .02 : .03;
 
-	_.each(oc.option, function (option) {
+	if (oc) {
+		_.each(oc.option, function (option) {
 
-		if (Math.abs(option.strike - last) <= percent * last) {
+			if (Math.abs(option.strike - last) <= percent * last) {
 
-			if (option.symbol.slice(6).indexOf("P") > -1) {
-				putOptions.push(option);
-			} else {
-				callOptions.push(option);
+				if (option.symbol.slice(6).indexOf("P") > -1) {
+					putOptions.push(option);
+				} else {
+					callOptions.push(option);
+				}
 			}
-		}
 
 
-	});
-	makeButtons('call-button-holder', callOptions);
-	makeButtons('put-button-holder', putOptions.reverse());
+		});
+		makeButtons('call-button-holder', callOptions);
+		makeButtons('put-button-holder', putOptions.reverse());
 
 
-	var strikeChosen = Math.ceil(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+		var strikeChosen = Math.floor(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
 
-	$('.' + strikeChosen).each(function () {
-		$(this).removeClass().addClass("btn btn-warning");
-	});
+		$('.' + strikeChosen).each(function () {
+			$(this).removeClass().addClass("btn btn-warning");
+		});
+	} else {
+		showErrorMsg("No Option Chain Found")
 
+	}
 
 }
 
@@ -1433,8 +1524,8 @@ function getLatestQuote() {
 		var oc = prodtradier.getOptionChains(globalsymbol, dateOfExpiry);
 
 
-		oc.then((val) => {
-			showPutandCallOptions(val);
+		oc.then((val, resp) => {
+			showPutandCallOptions(val, resp);
 		});
 
 	});
@@ -1506,7 +1597,6 @@ function placeStrangleLeg(symbol, strikeChosen) {
 
 	var incrementBy = minincrement[globalsymbol];
 
-	var oPrefix = symbol.slice(0, 11);
 
 
 	for (var i = 0; i < 30; i++) {
@@ -1619,6 +1709,8 @@ function placeStrangleLeg(symbol, strikeChosen) {
 
 
 $(function () {
+
+	getPositions();
 
 	//null.s;
 
