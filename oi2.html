@@ -25,12 +25,15 @@
 	<link rel="stylesheet" href="./toastr.min.css">
 
 	<style>
-		.PUT{
+		.PUT {
 			color: red
 		}
-		.CALL{
+
+
+		.CALL {
 			color: green
 		}
+
 		#oi-cnt .form-wrap {
 			padding: 15px;
 			margin: 15px;
@@ -44,6 +47,32 @@
 		#optionsTable div[class$="pagination"] {
 			margin-top: 40px;
 		}
+
+		.btn-danger {
+			color: #fff;
+			background-color: #f12334;
+			border-color: #2e2c2c;
+		}
+
+
+		.btn-success {
+			color: #fff;
+			background-color: #04723f;
+			border-color: #282928;
+		}
+
+		.btn-danger-OTM {
+			color: #fff;
+			background-color: #f37681;
+			border-color: #2e2c2c;
+		}
+
+
+		.btn-success-OTM {
+			color: #fff;
+			background-color: #6ff5b6;
+			border-color: #282928;
+		}
 	</style>
 
 </head>
@@ -52,16 +81,24 @@
 	<div class="container-fluid" id="oi-cnt">
 		<div class="form-wrap row">
 			<form class="row gy-2 gx-3 align-items-center" id="form" method="post">
+
+
 				<div class="" row">
 					<div class="mb-3">
 						<div class="form-group">
-							<input class="form-control" value='SPY' type="text" id="symbol" placeholder="Your Symbol">
+							<input class="form-control" readonly value='' type="text" id="URL" placeholder="">
+						</div>
+					</div>
+				</div>
+
+				<div class="" row">
+					<div class="mb-3">
+						<div class="form-group">
+							<input class="form-control" value='SPX' type="text" id="symbol" placeholder="Your Symbol">
 						</div>
 
 						<button type="button" id='get-oc' class="btn btn-primary">Get OC</button>
-						<div class="form-group key" style="display: none">
-							<input class="form-control" type="text" id='access' placeholder="Access Key">
-						</div>
+						Current Val : <button type="button" id="lastquote" class="btn btn-info">...</button>
 					</div>
 				</div>
 				<div class="row">
@@ -73,9 +110,6 @@
 						<input class="form-check-input" type="checkbox" value="" id="buyHedges" checked> <label
 							class="form-check-label" for="flexCheckDefault"> Buy hedges </label>
 
-
-
-
 					</div>
 					<div class="mb-3 form-check  col g-3">
 
@@ -85,23 +119,37 @@
 
 					</div>
 				</div>
+				<div class="row">
+					<div class="col-auto">
+						<button class="btn btn-dark" id='sell-straddle' type="button">Sell Straddle separate</button>
+						<button class="btn btn-dark" id='sell-straddle-together' type="button">Sell Straddle-IronFly</button>
+						<button type="button" id="straddle-put" class="btn btn-danger">Straddle : Put Leg</button>
+						<button type="button" id="straddle-call" class="btn btn-success">Straddle : Call Leg</button>
 
-				<div class="col-auto">
+						<span id="lastquote" class="label label-danger"></span></h1>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-auto">
+						<button class="btn btn-primary" id='sell-starangle' type="button">Sell Strangle</button>
+						<button type="button" id="strangle-put" class="btn btn-warning">Strangle : Put Leg</button>
+						<button type="button" id="strangle-call" class="btn btn-secondary">Strangle : Call Leg</button>
 
-					Current Val : <button type="button" id="lastquote" class="btn btn-info">...</button>
-					<button class="btn btn-dark" id='sell-straddle' type="button">Sell Straddle</button>
-					<button class="btn btn-dark" id='sell-starangle' type="button">Sell Strangle</button>
-					<button type="button" id="strangle-put" class="btn btn-danger">Strangle : Put Leg</button>
-					<button type="button" id="strangle-call" class="btn btn-success">Strangle : Call Leg</button>
-					<button type="button" onclick="getPositions()" id="strangle-call" class="btn btn-info">Reload
-						Positions</button>
-					<button type="button" id="" onclick="reLoadOrders()" class="btn btn-info">Reload Open
-						Orders</button>
-
-					<span id="lastquote" class="label label-danger"></span></h1>
-
+						<span id="lastquote" class="label label-danger"></span></h1>
+					</div>
 				</div>
 
+				<div class="row">
+					<div class="col-auto">
+
+						<button type="button" onclick="getPositions()" id="strangle-call" class="btn btn-info">Reload
+							Positions</button>
+						<button type="button" id="" onclick="reLoadOrders()" class="btn btn-info">Reload Open
+							Orders</button>
+
+						<span id="lastquote" class="label label-danger"></span></h1>
+					</div>
+				</div>
 			</form>
 		</div>
 
@@ -121,7 +169,8 @@
 							data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
 							Positions :</button>
 					</h2>
-					<div id="flush-collapseOne" class="accordion-collapse collapse show" data-bs-parent-omit="#optionsTable">
+					<div id="flush-collapseOne" class="accordion-collapse collapse show"
+						data-bs-parent-omit="#optionsTable">
 						<div class="accordion-body">
 							<table id="Positions" class="table table-striped table-blue" data-show-columns="true">
 							</table>
@@ -134,7 +183,8 @@
 							data-bs-target="#flush-collapseTwo" aria-expanded="false" aria-controls="flush-collapseTwo">
 							Working :</button>
 					</h2>
-					<div id="flush-collapseTwo" class="accordion-collapse collapse show" data-bs-parent-omit="#optionsTable">
+					<div id="flush-collapseTwo" class="accordion-collapse collapse show"
+						data-bs-parent-omit="#optionsTable">
 						<div class="accordion-body">
 							<table id="bs-Working" class="table table-striped table-blue" data-show-columns="true">
 							</table>
@@ -147,7 +197,8 @@
 							data-bs-target="#flush-collapseThree" aria-expanded="false"
 							aria-controls="flush-collapseThree">Filled</button>
 					</h2>
-					<div id="flush-collapseThree" class="accordion-collapse collapse" data-bs-parent-omit="#optionsTable">
+					<div id="flush-collapseThree" class="accordion-collapse collapse"
+						data-bs-parent-omit="#optionsTable">
 						<div class="accordion-body">
 							<table id="bs-Filled" class="table table-striped table-blue">
 							</table>
@@ -160,7 +211,8 @@
 							data-bs-target="#flush-collapseFour" aria-expanded="false"
 							aria-controls="flush-collapseOne">Cancelled</button>
 					</h2>
-					<div id="flush-collapseFour" class="accordion-collapse collapse" data-bs-parent-omit="#optionsTable">
+					<div id="flush-collapseFour" class="accordion-collapse collapse"
+						data-bs-parent-omit="#optionsTable">
 						<div class="accordion-body">
 							<table id="bs-Cancelled" class="table table-striped table-blue" data-show-columns="true">
 							</table>
@@ -173,7 +225,8 @@
 							data-bs-target="#flush-collapseFive" aria-expanded="false"
 							aria-controls="flush-collapseOne">Rejected</button>
 					</h2>
-					<div id="flush-collapseFive" class="accordion-collapse collapse" data-bs-parent-omit="#optionsTable">
+					<div id="flush-collapseFive" class="accordion-collapse collapse"
+						data-bs-parent-omit="#optionsTable">
 						<div class="accordion-body">
 							<table id="bs-Rejected" class="table table-striped table-blue" data-show-columns="true">
 							</table>
@@ -190,6 +243,7 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="./toastr.min.js"></script>
+<script src="./tradier.js"></script>
 <script src="./oi2.js"></script>
 
 </html>

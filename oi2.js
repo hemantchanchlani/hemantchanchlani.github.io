@@ -1,7 +1,9 @@
 
+
+
 var globalsymbol = 'SPX';
 var defaultQty = 1;
-var percentofOppo = .5;
+var strikesToSearch = 40;
 
 
 var minincrement = {
@@ -11,6 +13,7 @@ var minincrement = {
 	'IWM': 1,
 	'SPX': 5,
 	'RUT': 5,
+	'AAPL': 2.5,
 	'TSLA': 2.5
 
 }
@@ -20,6 +23,19 @@ var buyLegMinimum = {
 
 	'SPX': .1,
 	'RUT': .1,
+	'AAPL': .1,
+	'IWM': .01,
+	'SPY': .01,
+	'QQQ': .01,
+	'TSLA': 1
+
+};
+
+var buyLegMinimumStraddle = {
+
+	'SPX': .2,
+	'RUT': .1,
+	'AAPL': .1,
 	'IWM': .01,
 	'SPY': .01,
 	'QQQ': .01,
@@ -30,20 +46,40 @@ var buyLegMinimum = {
 
 var minimumCredit = {
 
-	'SPX': 1.1,
+	'SPX': 1,
 	'RUT': 1,
 	'IWM': .11,
+	'AAPL': 1.1,
 	'SPY': .11,
 	'QQQ': .11,
 };
 
 
-var reloadOrderInterval = 2000000;
+const URLS = {
+	prod: 'https://api.tradier.com/v1/',
+	beta: 'https://api.tradier.com/beta/',
+	sandbox: 'https://sandbox.tradier.com/v1/',
+	stream: 'https://stream.tradier.com/v1',
+};
+
+
+var latest = null;
+var quoteRefresh = 200000;
+var reloadOrderInterval = 200000;
 
 var accountNumber = 'VA94962097';
 var prodaccountNumber = '6YA26930';
-var apiKey = 'yG1tBcGioyqA0J6CA1oW3IJ4svAw';
-var prodApiKey = 'OqRWQhNJZc1ZvPrFc53etOAA3XAY';
+
+
+var tradier = new Tradier(apiKey, 'sandbox');
+var prodtradier = new Tradier(prodApiKey, 'prod');
+
+
+// To use prod  - uncomment
+tradier = prodtradier;
+//prodtradier = tradier;
+
+accountNumber = prodaccountNumber;
 
 var access = localStorage.getItem('access');
 
@@ -58,21 +94,14 @@ function urlstringify(data) {
 	return url;
 }
 
+let expiration = new Date();
+// Extract the year, month, and day from the expiration date
+const year = expiration.getFullYear();
+const month = (expiration.getMonth() + 1).toString().padStart(2, '0');
+let day = expiration.getDate().toString().padStart(2, '0');
 function todate() {
-	var today = new Date();
 
-	var dd = today.getDate();
-	var mm = today.getMonth() + 1;
-	var yyyy = today.getFullYear();
-	if (dd < 10) {
-		dd = '0' + dd;
-	}
-
-	if (mm < 10) {
-		mm = '0' + mm;
-	}
-	today = yyyy + '-' + mm + '-' + dd;
-	return today;
+	return year + '-' + month + '-' + day;;
 
 }
 
@@ -98,377 +127,6 @@ function footer(tooltipItems) {
 	});
 	return 'Sum: ' + sum;
 };
-
-const URLS = {
-	prod: 'https://api.tradier.com/v1/',
-	beta: 'https://api.tradier.com/beta/',
-	sandbox: 'https://sandbox.tradier.com/v1/',
-	stream: 'https://stream.tradier.com/v1',
-};
-
-class Tradier {
-
-	constructor(accessToken, endpoint = 'prod') {
-		this.accessToken = accessToken;
-		this.endpoint = endpoint;
-	}
-
-	config() {
-		return {
-			baseURL: URLS[this.endpoint],
-			headers: {
-				Authorization: `Bearer ${this.accessToken}`,
-				Accept: 'application/json',
-			},
-		};
-	}
-	// region Market Data
-	getQuote(symbols) {
-		return this.get('markets/quotes', {
-			symbols: symbols,
-		}).then(
-			({
-				data: {
-					quotes: { quote },
-				},
-			}) => quote
-		);
-	}
-	get(url, params, config = {}) {
-		return axios.request({
-			method: 'get',
-			url: parseQuery(url, params),
-			...this.config(),
-			...config,
-		});
-	}
-
-
-
-	post(url, data, config = {}) {
-		return axios.request({
-			method: 'post',
-			url,
-			data: parseData(data),
-			...this.config(),
-			...config,
-		});
-	}
-
-	put(url, data, config = {}) {
-		return axios.request({
-			method: 'put',
-			url,
-			data: parseData(data),
-			...this.config(),
-			...config,
-		});
-	}
-
-	delete(url, config = {}) {
-		return axios.request({
-			method: 'delete',
-			url,
-			...this.config(),
-			...config,
-		});
-	}
-	// endregion
-
-	// region User Data
-	getProfile() {
-		return this.get('user/profile').then(({ data: { profile } }) => profile);
-	}
-
-	getBalances() {
-		return this.get('user/balances').then(({ data: { accounts } }) => accounts);
-	}
-
-	getPositions() {
-		return this.get('user/positions').then(
-			({ data: { accounts } }) => accounts
-		);
-	}
-
-	getHistory() {
-		return this.get('user/history').then(({ data: { accounts } }) => accounts);
-	}
-
-	getGainloss() {
-		return this.get('user/gainloss').then(({ data: { accounts } }) => accounts);
-	}
-
-	getOrders() {
-		return this.get('user/orders').then(({ data: { accounts } }) => accounts);
-	}
-	// endregion
-
-	// region Account Data
-	getAccountBalances(account) {
-		return this.get(`accounts/${account}/balances`).then(
-			({ data: { balances } }) => balances
-		);
-	}
-
-	getAccountPositions(account) {
-		return this.get(`accounts/${account}/positions`).then(
-			({ data: { positions } }) => positions
-		);
-	}
-
-	getAccountHistory(account) {
-		return this.get(`accounts/${account}/history`).then(
-			({ data: { history } }) => history
-		);
-	}
-
-	getAccountGainloss(account) {
-		return this.get(`accounts/${account}/gainloss`).then(
-			({ data: { gainloss } }) => gainloss
-		);
-	}
-
-	getAccountOrders(account) {
-		return this.get(`accounts/${account}/orders`).then(
-			({ data: { orders } }) => orders
-		);
-	}
-
-	getAccountOrder(account, orderId) {
-		return this.get(`accounts/${account}/orders/${orderId}`).then(
-			({ data: { order } }) => order
-		);
-	}
-	// endregion
-
-	// region Trading
-	createOrder(account, data) {
-		return this.post(`accounts/${account}/orders`, data).then(
-			({ data: { order } }) => order
-		);
-	}
-
-	previewOrder(account, data) {
-		return this.post(`accounts/${account}/orders`, {
-			...parseData(data),
-			preview: true,
-		}).then(({ data: { order } }) => order);
-	}
-
-	changeOrder(account, orderId, data) {
-		return this.put(`accounts/${account}/orders/${orderId}`, data).then(
-			({ data: { order } }) => order
-		);
-	}
-
-	cancelOrder(account, orderId) {
-		return this.delete(`accounts/${account}/orders/${orderId}`).then(
-			({ data: { order } }) => order
-		);
-	}
-	// endregion
-
-	// region Market Data
-	getQuote(symbols) {
-		return this.get('markets/quotes', {
-			symbols: symbols
-		}).then(
-			({
-				data: {
-					quotes: { quote },
-				},
-			}) => quote
-		);
-	}
-
-	getTimesales(symbol, interval, start, end, sessionFilter) {
-		return this.get('markets/timesales', {
-			symbol,
-			interval,
-			start,
-			end,
-			session_filter: sessionFilter,
-		}).then(({ data: { series } }) => series);
-	}
-
-	getOptionChains(symbol, expiration) {
-		return this.get('markets/options/chains', { symbol, expiration }).then(
-			({ data: { options } }) => options
-		);
-	}
-
-	getOptionStrikes(symbol, expiration) {
-		return this.get('markets/options/strikes', { symbol, expiration }).then(
-			({ data: { strikes } }) => strikes
-		);
-	}
-
-	getOptionExpirations(symbol, includeAllRoots) {
-		return this.get('markets/options/expirations', {
-			symbol,
-			includeAllRoots,
-		}).then(({ data: { expirations } }) => expirations);
-	}
-
-	getPriceHistory(symbol, interval, start, end) {
-		return this.get('markets/history', {
-			symbol,
-			interval,
-			start,
-			end,
-		}).then(({ data: { history } }) => history);
-	}
-
-	getClock() {
-		return this.get('markets/clock').then(({ data: { clock } }) => clock);
-	}
-
-	getCalendar(market, year) {
-		return this.get('markets/calendar', { market, year }).then(
-			({ data: { calendar } }) => calendar
-		);
-	}
-
-	search(q, indexes = true) {
-		return this.get('markets/search', { q, indexes }).then(
-			({ data: { securities } }) => securities
-		);
-	}
-
-	lookup(q, exchanges, types) {
-		return this.get('markets/lookup', { q, exchanges, types }).then(
-			({ data: { securities } }) => securities
-		);
-	}
-
-	// region Fundamentals (BETA)
-	getCompany(symbols) {
-		return this.get(
-			'markets/fundamentals/company',
-			{ symbols: parseSymbols(symbols) },
-			{ baseURL: URLS.beta }
-		).then(({ data: { items } }) => items);
-	}
-
-	getCalendars(symbols) {
-		return this.get(
-			'markets/fundamentals/calendars',
-			{ symbols: parseSymbols(symbols) },
-			{ baseURL: URLS.beta }
-		).then(({ data: { items } }) => items);
-	}
-
-	getDividends(symbols) {
-		return this.get(
-			'markets/fundamentals/dividends',
-			{ symbols: parseSymbols(symbols) },
-			{ baseURL: URLS.beta }
-		).then(({ data: { items } }) => items);
-	}
-
-	getCorporateActions(symbols) {
-		return this.get(
-			'markets/fundamentals/corporate_actions',
-			{ symbols: parseSymbols(symbols) },
-			{ baseURL: URLS.beta }
-		).then(({ data: { items } }) => items);
-	}
-
-	getRatios(symbols) {
-		return this.get(
-			'markets/fundamentals/ratios',
-			{ symbols: parseSymbols(symbols) },
-			{ baseURL: URLS.beta }
-		).then(({ data: { items } }) => items);
-	}
-
-	getFinancials(symbols) {
-		return this.get(
-			'markets/fundamentals/financials',
-			{ symbols: parseSymbols(symbols) },
-			{ baseURL: URLS.beta }
-		).then(({ data: { items } }) => items);
-	}
-
-	getStatistics(symbols) {
-		return this.get(
-			'markets/fundamentals/statistics',
-			{ symbols: parseSymbols(symbols) },
-			{ baseURL: URLS.beta }
-		).then(({ data: { items } }) => items);
-	}
-	// endregion
-
-	// region Watchlists
-	getWatchlists() {
-		return this.get('/watchlists').then(
-			({ data: { watchlists } }) => watchlists
-		);
-	}
-
-	getWatchlist(id) {
-		return this.get(`/watchlists/${id}`).then(
-			({ data: { watchlist } }) => watchlist
-		);
-	}
-
-	createWatchlist(name, symbols) {
-		return this.post('/watchlists', {
-			name,
-			symbols: parseSymbols(symbols),
-		}).then(({ data: { watchlist } }) => watchlist);
-	}
-
-	updateWatchlist(id, name, symbols) {
-		return this.put(`/watchlists/${id}`, {
-			name,
-			symbols: parseSymbols(symbols),
-		}).then(({ data: { watchlist } }) => watchlist);
-	}
-
-	deleteWatchlist(id) {
-		return this.delete(`/watchlists/${id}`).then(
-			({ data: { watchlists } }) => watchlists
-		);
-	}
-
-	addSymbols(id, symbols) {
-		return this.post(`/watchlists/${id}/symbols`, {
-			symbols: parseSymbols(symbols),
-		}).then(({ data: { watchlist } }) => watchlist);
-	}
-
-	removeSymbols(id, symbol) {
-		return this.delete(`/watchlists/${id}/symbols/${symbol}`).then(
-			({ data: { watchlist } }) => watchlist
-		);
-	}
-	// endregion
-
-	// region Streaming
-	createSession() {
-		return this.post('markets/events/session');
-	}
-
-	getEvents(sessionid, symbols, filter, linebreak) {
-		return this.post(
-			'markets/events',
-			{
-				sessionid,
-				symbols: parseSymbols(symbols),
-				filter,
-				linebreak,
-			},
-			{ baseURL: URLS.stream }
-		).then(({ data: { data } }) => data);
-	}
-	// endregion
-}
-
-
-var tradier = new Tradier(apiKey, 'sandbox');
-var prodtradier = new Tradier(prodApiKey, 'prod');
-var prodtradier = tradier;
 
 
 
@@ -512,12 +170,13 @@ function getPositions() {
 
 }
 
-
+var allOrders;
 
 function reLoadOrders() {
 	var orders = tradier.getOrders(accountNumber);
 
 	orders.then((val) => {
+		allOrders = val;
 		createBSTable(val);
 
 
@@ -565,11 +224,7 @@ tradier.createOrder(accountNumber, {
 function generateOptionSymbol(strike, oType) {
 
 
-	let expiration = new Date();
-	// Extract the year, month, and day from the expiration date
-	const year = expiration.getFullYear().toString().substr(-2);
-	const month = (expiration.getMonth() + 1).toString().padStart(2, '0');
-	let day = expiration.getDate().toString().padStart(2, '0');
+	let yr = year.toString().substr(-2);
 
 	// Convert the strike price to a string and remove decimal point and leading zeros
 	let strikeStr = strike.toFixed(3).replace('.', '');
@@ -579,13 +234,10 @@ function generateOptionSymbol(strike, oType) {
 	var ggOp = (globalsymbol == 'SPX') ? 'SPXW' : globalsymbol;
 
 	// Combine the symbol, year, month, day, and strike to form the option symbol
-	let optionSymbol = `${ggOp}${year}${month}${day}${oType}${strikeStr}`;
+	let optionSymbol = `${ggOp}${yr}${month}${day}${oType}${strikeStr}`;
 
 	return optionSymbol;
 }
-
-
-
 
 
 
@@ -785,6 +437,13 @@ function createPositionTable(positions) {
 					`</button>`,
 
 
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},.75,'p')">`,
+					`|75 <i class="fa-solid fa-percent"></i>|`,
+					`</button>`,
+
+
+
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},1,'d')">`,
 					`|100 <i class="fa-solid fa-dollar-sign"></i>|`,
 					`</button>`,
@@ -794,27 +453,71 @@ function createPositionTable(positions) {
 					`</button>`,
 
 
-					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},0,'d')">`,
-					`|(stop limit@cost basis)|`,
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="rebalancePosition(${curID},1,'d')">`,
+					`| risk-off x1 |`,
 					`</button>`,
+
+
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="rebalancePosition(${curID},2,'d')">`,
+					`| risk-off x2 |`,
+					`</button>`,
+
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="rebalancePosition(${curID},3,'d')">`,
+					`| risk-off x3 |`,
+					`</button>`,
+
+
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="rebalancePosition(${curID}, -1,'d')">`,
+					`| take profit  x 1 |`,
+					`</button>`,
+
+
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="rebalancePosition(${curID},-2,'d')">`,
+					`| take profit  x 2 |`,
+					`</button>`,
+
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="rebalancePosition(${curID},-3,'d')">`,
+					`| take profit  x 3 |`,
+					`</button>`,
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="trailprofit(${curID},1.1,'d')">`,
+					`| trailprofit 10% |`,
+					`</button>`,
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="trailprofit(${curID}, 1.2,'d')">`,
+					`| trailprofit 20% |`,
+					`</button>`,
+
+
 
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="addStopLimitOrder(${curID},0,'d', true)">`,
-					`|(close @cost basis)|`,
+					`|(close if @cost basis)|`,
 					`</button>`,
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="closeAtAsk(${curID})">`,
-					`|(close @ ask)|`,
+					`|(close @ ask now)|`,
 					`</button>`,
 
 
-					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="match50OfThis(${curID})">`,
-					`|(Match ~ @50 of opposite)|`,
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="matchPercentOfOfThis(${curID},.5 , false)">`,
+					`|(Risk Off and match @ ~ @50 of opposite)|`,
+					`</button>`,
+
+
+					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="buyOppositeWithMatchingPrice(${curID},1)">`,
+					`|(Sell Opposite with matching price)|`,
 					`</button>`,
 
 
 					`<button type="button" class="btn btn-default btn-sm ${oType}" onclick="closeAtMarketOrder(${curID})">`,
-					`|(close @ market)| `,
+					`|(close @ market now)| `,
 					`</button>`
 				].join('')
 			}
@@ -902,19 +605,21 @@ function closeAtMarketOrder(pId) {
 
 	var position = _.where(myPositions, { 'id': pId })[0];
 
-	var orders = _.where(myOrders, { 'option_symbol': position.symbol, 'status': 'filled' });
 
-	if (/*orders.length*/false) {
+	var openOrder = _.where(allOrders.account.orders.order, { 'option_symbol': position.symbol, 'status': 'open' })[0];
 
-		_.each(orders, (order) => {
+	if (openOrder) {
+		var cancelOrder = tradier.cancelOrder(accountNumber, openOrder.id);
+
+		cancelOrder.then(resp => {
 
 
 			var order = tradier.createOrder(accountNumber, {
 				'class': 'option',
 				'symbol': globalsymbol,
-				'option_symbol': order.option_symbol,
-				'side': (order.side == 'sell_to_open') ? 'buy_to_close' : 'sell_to_close',
-				'quantity': Math.abs(order.quantity),
+				'option_symbol': position.symbol,
+				'side': (position.quantity < 0) ? 'buy_to_close' : 'sell_to_close',
+				'quantity': Math.abs(position.quantity),
 				'type': 'market',
 				'duration': 'day',
 				'tag': todate()
@@ -932,7 +637,6 @@ function closeAtMarketOrder(pId) {
 
 
 		});
-
 	} else {
 
 
@@ -959,18 +663,51 @@ function closeAtMarketOrder(pId) {
 	}
 
 
+}
+
+
+
+
+function buyOppositeWithMatchingPrice(pId, percentofOppo) {
+
+	var positionToMatch = _.where(myPositions, { 'id': pId })[0];
+
+	var query = positionToMatch.symbol;
+
+
+	if (positionToMatch.symbol.slice(6).indexOf("C") > -1) {
+		var toSellType = "P";
+	} else {
+		var toSellType = "C";
+	}
+
+	var q = prodtradier.getQuote(query);
+
+	q.then(val => {
+
+
+		var strikeChosen = positionToMatch.symbol.slice(-7) / 1000;
+
+		var symbol = generateOptionSymbol(strikeChosen, toSellType);
+
+		placeStrangleLeg(symbol, strikeChosen, val.ask * percentofOppo);
+
+	});
+
 
 
 
 }
 
 
-function match50OfThis(pId) {
+
+
+function matchPercentOfOfThis(pId, percentofOppo, same) {
 
 	var positionToClose = _.where(myPositions, { 'id': pId })[0];
+	var oppositeside;
 
-
-	var oppositeside = _.filter(myPositions, (position) => {
+	oppositeside = _.filter(myPositions, (position) => {
 
 		return (position.quantity < 0 && position.symbol != positionToClose.symbol);
 
@@ -994,7 +731,7 @@ function match50OfThis(pId) {
 	var incrementBy = minincrement[globalsymbol];
 
 
-	for (var i = 0; i < 30; i++) {
+	for (var i = 0; i < strikesToSearch; i++) {
 		if (oType == "C") {
 			tryStrike = tryStrike + incrementBy;
 		} else {
@@ -1060,7 +797,8 @@ function match50OfThis(pId) {
 			'option_symbol[1]': chosenOne.symbol,
 			'side[1]': 'sell_to_open',
 			'quantity[1]': defaultQty,
-			'tag': todate()
+			'tag': todate(),
+			'strike' : sellSide.strike
 		});
 
 
@@ -1085,20 +823,125 @@ function closeAtAsk(pId) {
 
 	var position = _.where(myPositions, { 'id': pId })[0];
 
-	var q = prodtradier.getQuote(position.symbol);
 
-	q.then((val) => {
+	var openOrder = _.where(allOrders.account.orders.order, { 'option_symbol': position.symbol, 'status': 'open' })[0];
+
+
+	if (openOrder) {
+
+		var cancelOrder = tradier.cancelOrder(accountNumber, openOrder.id);
+
+		cancelOrder.then(resp => {
+
+
+			var q = prodtradier.getQuote(position.symbol);
+
+			q.then((val) => {
+
+				var order = tradier.createOrder(accountNumber, {
+					'class': 'option',
+					'symbol': globalsymbol,
+					'option_symbol': position.symbol,
+					'side': (position.quantity < 0) ? 'buy_to_close' : 'sell_to_close',
+					'quantity': Math.abs(position.quantity),
+					'type': 'limit',
+					'duration': 'day',
+					'price': (val.ask * .95).toFixed(2),
+					'stop': (val.ask * .95).toFixed(2),
+					'tag': todate()
+				});
+
+
+
+				order.then(resp => {
+
+
+					showResponse(resp);
+
+
+				}).catch((err) => {
+
+
+					showResponse(err);
+				})
+
+			});
+
+
+
+		}).catch((err) => {
+			showResponse(err);
+		})
+
+	} else {
+
+
+		var q = prodtradier.getQuote(position.symbol);
+
+		q.then((val) => {
+
+			var order = tradier.createOrder(accountNumber, {
+				'class': 'option',
+				'symbol': globalsymbol,
+				'option_symbol': position.symbol,
+				'side': (position.quantity < 0) ? 'buy_to_close' : 'sell_to_close',
+				'quantity': Math.abs(position.quantity),
+				'type': 'limit',
+				'duration': 'day',
+				'price': (val.ask * .95).toFixed(2),
+				'stop': (val.ask * .95).toFixed(2),
+				'tag': todate()
+			});
+
+
+
+			order.then(resp => {
+
+
+				showResponse(resp);
+
+
+			}).catch((err) => {
+
+
+				showResponse(err);
+			})
+
+		});
+	}
+
+
+}
+
+
+
+function trailprofit(pId, amt) {
+
+	var positionToClose = _.where(myPositions, { 'id': pId })[0];
+
+
+
+	var q = prodtradier.getQuote(positionToClose.symbol);
+
+	q.then(val => {
+
+		var buySide = val;
+
+		var debit = buySide.ask;
+
+
+		var netAmt = Math.abs(debit) * amt;;
 
 		var order = tradier.createOrder(accountNumber, {
 			'class': 'option',
 			'symbol': globalsymbol,
-			'option_symbol': position.symbol,
-			'side': (position.quantity < 0) ? 'buy_to_close' : 'sell_to_close',
-			'quantity': Math.abs(position.quantity),
-			'type': 'limit',
+			'option_symbol': positionToClose.symbol,
+			'side': 'buy_to_close',
+			'quantity': Math.abs(positionToClose.quantity),
+			'type': 'stop_limit',
 			'duration': 'day',
-			'price': (val.ask * .95).toFixed(2),
-			'stop': (val.ask * .95).toFixed(2),
+			'price': (netAmt * 1.05).toFixed(2),
+			'stop': netAmt.toFixed(2),
 			'tag': todate()
 		});
 
@@ -1106,17 +949,145 @@ function closeAtAsk(pId) {
 
 		order.then(resp => {
 
+			showResponse(resp);
+
+
+		}).catch((err) => {
+
+			showResponse(err);
+		})
+
+
+	});
+
+
+
+}
+
+
+function rebalancePosition(pId, leg, type, l) {
+
+	var positionToClose = _.where(myPositions, { 'id': pId })[0];
+
+	if (positionToClose.symbol.slice(6).indexOf("C") > -1) {
+		var oType = "C";
+	} else {
+		var oType = "P";
+	}
+
+	var tryStrike = Math.floor((positionToClose.symbol.slice(-7) / 1000) / minincrement[globalsymbol]) * minincrement[globalsymbol];
+
+	var adjustBy = minincrement[globalsymbol] * leg;
+
+	if (oType == "P") {
+
+		tryStrike = tryStrike - adjustBy;
+
+	}
+
+
+	if (oType == "C") {
+
+		tryStrike = tryStrike + adjustBy;
+
+	}
+
+	var sellThisOption = generateOptionSymbol(tryStrike, oType);
+
+	var query = positionToClose.symbol + ',' + sellThisOption;
+	var q = prodtradier.getQuote(query);
+
+
+
+	q.then(val => {
+
+
+		if (positionToClose.quantity < 0) {
+			var buySide = _.where(val, { 'symbol': positionToClose.symbol })[0];
+			var sellSide = _.where(val, { 'symbol': sellThisOption })[0];
+		} else {
+
+			var sellSide = _.where(val, { 'symbol': positionToClose.symbol })[0];
+			var buySide = _.where(val, { 'symbol': sellThisOption })[0];
+		}
+
+		var debit = buySide.ask;
+
+		var credit = sellSide.bid;
+
+		var netAmt = Math.abs(credit - debit);
+
+
+
+		var orderType = 'credit';
+		netAmt = netAmt * .95;
+		if (leg > 0) {
+			orderType = 'debit';
+			netAmt = netAmt * 1.05;
+		}
+
+
+		if (positionToClose.quantity < 0) {
+
+			var orderObj =
+
+			{
+				'class': 'multileg',
+				'symbol': globalsymbol,
+				'type': orderType,
+				'duration': 'day',
+				'price': netAmt.toFixed(2),
+				'option_symbol[0]': positionToClose.symbol,
+				'side[0]': 'buy_to_close',
+				'quantity[0]': defaultQty,
+				'option_symbol[1]': sellSide.symbol,
+				'side[1]': 'sell_to_open',
+				'quantity[1]': defaultQty,
+				'tag': todate(),
+				'strike' : sellSide.strike
+			};
+
+		} else {
+			var orderObj =
+			{
+				'class': 'multileg',
+				'symbol': globalsymbol,
+				'type': orderType,
+				'duration': 'day',
+				'price': netAmt.toFixed(2),
+				'option_symbol[0]': positionToClose.symbol,
+				'side[0]': 'sell_to_close',
+				'quantity[0]': defaultQty,
+				'option_symbol[1]': sellSide.symbol,
+				'side[1]': 'buy_to_open',
+				'quantity[1]': defaultQty,
+				'tag': todate()
+			};
+
+		}
+
+
+		var order = tradier.createOrder(accountNumber, orderObj)
+
+
+
+
+
+		order.then(resp => {
 
 			showResponse(resp);
 
 
 		}).catch((err) => {
 
-
 			showResponse(err);
 		})
 
+
+
 	});
+
+
 
 }
 
@@ -1307,7 +1278,15 @@ function showErrorMsg(resp) {
 
 var isBuySideWanted = $('#buyHedges').is(':checked');
 
-function placeSpreadOrder(symbol, strikeChosen) {
+function placeSpreadOrder(symbol, strikeChosen, isStraddle) {
+
+	var minimumHedge = buyLegMinimum[globalsymbol];
+
+	if (isStraddle) {
+		minimumHedge = buyLegMinimumStraddle[globalsymbol];
+
+	}
+
 
 	var tryStrike = parseFloat(strikeChosen);
 	isBuySideWanted = $('#buyHedges').is(':checked');
@@ -1326,10 +1305,9 @@ function placeSpreadOrder(symbol, strikeChosen) {
 
 		var incrementBy = minincrement[globalsymbol];
 
-		var oPrefix = symbol.slice(0, 11);
 
 
-		for (var i = 0; i < 30; i++) {
+		for (var i = 0; i < strikesToSearch; i++) {
 
 			if (oType == "C") {
 				tryStrike = tryStrike + incrementBy;
@@ -1362,7 +1340,7 @@ function placeSpreadOrder(symbol, strikeChosen) {
 
 			var buySide = _.filter(val, (oc) => {
 
-				return oc.ask <= buyLegMinimum[globalsymbol];
+				return oc.ask <= minimumHedge;
 
 			});
 
@@ -1376,7 +1354,7 @@ function placeSpreadOrder(symbol, strikeChosen) {
 			}
 
 
-			buySide.length == 0 ? showErrorMsg('no buyside with price ' + buyLegMinimum[globalsymbol] + ' found') : '';
+			buySide.length == 0 ? showErrorMsg('no buyside with price ' + minimumHedge + ' found') : '';
 
 			var price = sellSide.bid - buySide[0].ask;
 
@@ -1395,7 +1373,8 @@ function placeSpreadOrder(symbol, strikeChosen) {
 				'option_symbol[1]': buySide[0].symbol,
 				'side[1]': 'buy_to_open',
 				'quantity[1]': defaultQty,
-				'tag': todate()
+				'tag': todate(),
+				'strike' : sellSide.strike
 			})
 		}
 
@@ -1410,7 +1389,8 @@ function placeSpreadOrder(symbol, strikeChosen) {
 				'type': (isBuyMarket) ? 'market' : 'limit',
 				'duration': 'day',
 				'price': (sellSide.bid * .99).toFixed(2),
-				'tag': todate()
+				'tag': todate(),
+				'strike' : sellSide.strike
 			});
 
 
@@ -1445,18 +1425,27 @@ function makeButtons(cName, options) {
 
 	$('.' + cName).empty();
 
-	if (cName.indexOf('call') >= 0) {
-
-		var btnClass = ' btn btn-success ';
-	} else {
-
-		var btnClass = ' btn btn-danger ';
-	}
 
 	_.each(options, function (option) {
 
+		if (cName.indexOf('call') >= 0) {
+			var btnClass = ' btn btn-success-OTM ';
+			if (option.strike > last) {
+				btnClass = ' btn btn-success ';
+			}
 
-		$('.' + cName).append('<button class="' + btnClass + option.strike + ' ' + '" onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '><b>$' + option.strike + "</b>-" + option.bid + "/" + option.ask + " " +
+
+		} else {
+
+			var btnClass = ' btn btn-danger-OTM ';
+
+			if (option.strike < last) {
+				btnClass = ' btn btn-danger ';
+			}
+
+		}
+
+		$('.' + cName).append('<button style="width: 150px;"   class="' + btnClass + option.strike + ' ' + '" onclick=placeSpreadOrder("' + option.symbol + '","' + option.strike + '") value=' + option.symbol + '><b>$' + option.strike + "</b>-" + option.bid + "/" + option.ask + " " +
 			'</button>');
 
 
@@ -1464,7 +1453,7 @@ function makeButtons(cName, options) {
 
 }
 
-var last = 4400;
+var last = 4500;
 function showPutandCallOptions(oc, resp) {
 
 	$('.call-button-holder').empty();
@@ -1481,9 +1470,25 @@ function showPutandCallOptions(oc, resp) {
 			if (Math.abs(option.strike - last) <= percent * last) {
 
 				if (option.symbol.slice(6).indexOf("P") > -1) {
-					putOptions.push(option);
+
+					if (globalsymbol == "SPX") {
+						if (option.symbol.indexOf('SPXW') >= 0) {
+
+							putOptions.push(option);
+						}
+					} else {
+
+						putOptions.push(option);
+					}
 				} else {
-					callOptions.push(option);
+					if (globalsymbol == "SPX") {
+						if (option.symbol.indexOf('SPXW') >= 0) {
+							callOptions.push(option);
+						}
+					} else {
+
+						callOptions.push(option);
+					}
 				}
 			}
 
@@ -1493,10 +1498,19 @@ function showPutandCallOptions(oc, resp) {
 		makeButtons('put-button-holder', putOptions.reverse());
 
 
-		var strikeChosen = Math.floor(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+		var strikeChosenC = Math.ceil(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+		var strikeChosenF = Math.floor(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+
+		var floorDiff = Math.abs(strikeChosenF - last);
+		var ceilDiff = Math.abs(strikeChosenC - last);
+		var strikeChosen = strikeChosenC;
+		if (floorDiff <= ceilDiff) {
+
+			strikeChosen = strikeChosenF;
+		}
 
 		$('.' + strikeChosen).each(function () {
-			$(this).removeClass().addClass("btn btn-warning");
+			$(this).removeClass().addClass("btn btn-light");
 		});
 	} else {
 		showErrorMsg("No Option Chain Found")
@@ -1507,8 +1521,6 @@ function showPutandCallOptions(oc, resp) {
 
 
 
-var latest = null;
-var quoteRefresh = 1000000;
 
 
 function getLatestQuote() {
@@ -1516,8 +1528,8 @@ function getLatestQuote() {
 	t.then(q => {
 
 		if (q && q.last) {
-			last = q.last;
-			$('#lastquote').html(last);
+			last = Math.round(q.last);
+			$('#lastquote').html(q.last);
 		}
 
 		var dateOfExpiry = todate();
@@ -1532,6 +1544,45 @@ function getLatestQuote() {
 }
 
 
+
+
+function sellStraddleTogether(e) {
+	e.preventDefault();
+	globalsymbol = $('#symbol').val();
+
+
+	var t = prodtradier.getQuote(globalsymbol);
+	t.then(q => {
+
+		if (q && q.last) {
+			last = Math.round(q.last);
+			$('#lastquote').html(last);
+		}
+
+
+
+		var strikeChosenC = Math.ceil(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+		var strikeChosenF = Math.floor(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+
+		var floorDiff = Math.abs(strikeChosenF - q.last);
+		var ceilDiff = Math.abs(strikeChosenC - q.last);
+		var strikeChosen = strikeChosenC;
+		if (floorDiff <= ceilDiff) {
+
+			strikeChosen = strikeChosenF;
+		}
+
+
+		var callSymbol = generateOptionSymbol(strikeChosen, "C");
+		var putSymbol = generateOptionSymbol(strikeChosen, "P");
+		placeSpreadOrder(callSymbol, strikeChosen, true);
+		placeSpreadOrder(putSymbol, strikeChosen, true);
+
+	});
+}
+
+
+
 function sellStraddle(e) {
 	e.preventDefault();
 	globalsymbol = $('#symbol').val();
@@ -1541,20 +1592,75 @@ function sellStraddle(e) {
 	t.then(q => {
 
 		if (q && q.last) {
-			last = q.last;
+			last = Math.round(q.last);
 			$('#lastquote').html(last);
 		}
 
-		var strikeChosen = Math.ceil(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+
+
+		var strikeChosenC = Math.ceil(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+		var strikeChosenF = Math.floor(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+
+		var floorDiff = Math.abs(strikeChosenF - q.last);
+		var ceilDiff = Math.abs(strikeChosenC - q.last);
+		var strikeChosen = strikeChosenC;
+		if (floorDiff <= ceilDiff) {
+
+			strikeChosen = strikeChosenF;
+		}
 
 
 		var callSymbol = generateOptionSymbol(strikeChosen, "C");
 		var putSymbol = generateOptionSymbol(strikeChosen, "P");
-		placeSpreadOrder(callSymbol, strikeChosen);
-		placeSpreadOrder(putSymbol, strikeChosen);
+		placeSpreadOrder(callSymbol, strikeChosen, true);
+		placeSpreadOrder(putSymbol, strikeChosen, true);
 
 	});
 }
+
+
+
+function sellCallStraddle(e) {
+	e.preventDefault();
+	globalsymbol = $('#symbol').val();
+	var t = prodtradier.getQuote(globalsymbol);
+	t.then(q => {
+
+		if (q && q.last) {
+			last = Math.round(q.last);
+			$('#lastquote').html(last);
+		}
+
+
+
+		var strikeChosen = Math.ceil(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+		var callSymbol = generateOptionSymbol(strikeChosen, "C");
+		placeSpreadOrder(callSymbol, strikeChosen, true);
+
+	});
+}
+
+
+
+function sellPutStraddle(e) {
+	e.preventDefault();
+	globalsymbol = $('#symbol').val();
+	var t = prodtradier.getQuote(globalsymbol);
+	t.then(q => {
+
+		if (q && q.last) {
+			last = Math.round(q.last);
+			$('#lastquote').html(last);
+		}
+
+		var strikeChosen = Math.floor(last / minincrement[globalsymbol]) * minincrement[globalsymbol];
+		var putSymbol = generateOptionSymbol(strikeChosen, "P");
+		placeSpreadOrder(putSymbol, strikeChosen, true);
+
+	});
+}
+
+
 
 sellStrangle = (type) => {
 
@@ -1565,7 +1671,7 @@ sellStrangle = (type) => {
 	t.then(q => {
 
 		if (q && q.last) {
-			last = q.last;
+			last = Math.round(q.last);
 			$('#lastquote').html(last);
 		}
 
@@ -1580,9 +1686,15 @@ sellStrangle = (type) => {
 
 
 
-function placeStrangleLeg(symbol, strikeChosen) {
+function placeStrangleLeg(symbol, strikeChosen, desirecCredit) {
 
-	var tryStrike = parseFloat(strikeChosen);
+	if (!desirecCredit) {
+
+		desirecCredit = minimumCredit[globalsymbol];
+
+	}
+
+
 	isBuySideWanted = $('#buyHedges').is(':checked');
 	isBuyMarket = !$('#buy-limit').is(':checked');
 
@@ -1591,15 +1703,18 @@ function placeStrangleLeg(symbol, strikeChosen) {
 
 	if (symbol.slice(6).indexOf("C") > -1) {
 		var oType = "C";
+		var tryStrike = parseFloat(strikeChosen) - 10 * minincrement[globalsymbol];
 	} else {
 		var oType = "P";
+		var tryStrike = parseFloat(strikeChosen) + 10 * minincrement[globalsymbol];
 	}
 
 	var incrementBy = minincrement[globalsymbol];
 
 
 
-	for (var i = 0; i < 30; i++) {
+
+	for (var i = 0; i < strikesToSearch; i++) {
 
 		if (oType == "C") {
 			tryStrike = tryStrike + incrementBy;
@@ -1626,7 +1741,7 @@ function placeStrangleLeg(symbol, strikeChosen) {
 
 		var sellSide = _.filter(val, (oc) => {
 
-			return Math.abs(oc.bid >= minimumCredit[globalsymbol])
+			return Math.abs(oc.bid >= desirecCredit)
 
 
 		});
@@ -1634,7 +1749,7 @@ function placeStrangleLeg(symbol, strikeChosen) {
 
 		sellSide = _.sortBy(sellSide, (oc) => {
 
-			return Math.abs(oc.bid - minimumCredit[globalsymbol])
+			return Math.abs(oc.bid - desirecCredit)
 
 
 		});
@@ -1642,48 +1757,81 @@ function placeStrangleLeg(symbol, strikeChosen) {
 		sellSide = sellSide[0];
 
 
+		if (isBuySideWanted) {
+			var buySide = _.filter(val, (oc) => {
 
-		var buySide = _.filter(val, (oc) => {
+				return oc.ask <= buyLegMinimum[globalsymbol];
 
-			return oc.ask <= buyLegMinimum[globalsymbol];
-
-		});
+			});
 
 
 
-		if (oType == "C") {
-			buySide = _.sortBy(buySide, (b) => { return b.strike });
+			if (oType == "C") {
+				buySide = _.sortBy(buySide, (b) => { return b.strike });
+
+			} else {
+
+				buySide = _.sortBy(buySide, (b) => { return -b.strike });
+			}
+
+
+			buySide.length == 0 ? showErrorMsg('no buyside with price ' + buyLegMinimum[globalsymbol] + ' found') : '';
+
+			if (buySide.length && sellSide) {
+
+				var price = sellSide.bid - buySide[0].ask;
+
+
+				var order = tradier.createOrder(accountNumber, {
+					'class': 'multileg',
+					'symbol': globalsymbol,
+					'type': (isBuyMarket) ? 'market' : 'credit',
+					'duration': 'day',
+					'price': (price * .99).toFixed(2),
+					'option_symbol[0]': sellSide.symbol,
+					'side[0]': 'sell_to_open',
+					'quantity[0]': defaultQty,
+					'option_symbol[1]': buySide[0].symbol,
+					'side[1]': 'buy_to_open',
+					'quantity[1]': defaultQty,
+					'tag': todate(),
+					'strike' : sellSide.strike
+				})
+
+
+
+
+				order.then((resp, data, xyx, hsh) => {
+
+					order;
+
+					showResponse(resp);
+
+
+				}).catch((err) => {
+					showResponse(err);
+				})
+			} else {
+
+				showErrorMsg('no price  found for ' + oType);
+			}
 
 		} else {
 
-			buySide = _.sortBy(buySide, (b) => { return -b.strike });
-		}
-
-
-		buySide.length == 0 ? showErrorMsg('no buyside with price ' + buyLegMinimum[globalsymbol] + ' found') : '';
-
-		if (buySide.length && sellSide) {
-
-			var price = sellSide.bid - buySide[0].ask;
-
 
 			var order = tradier.createOrder(accountNumber, {
-				'class': 'multileg',
+				'class': 'option',
 				'symbol': globalsymbol,
-				'type': (isBuyMarket) ? 'market' : 'credit',
+				'option_symbol': sellSide.symbol,
+				'side': 'sell_to_open',
+				'quantity': defaultQty,
+				'type': (isBuyMarket) ? 'market' : 'limit',
 				'duration': 'day',
-				'price': price.toFixed(2),
-				'option_symbol[0]': sellSide.symbol,
-				'side[0]': 'sell_to_open',
-				'quantity[0]': defaultQty,
-				'option_symbol[1]': buySide[0].symbol,
-				'side[1]': 'buy_to_open',
-				'quantity[1]': defaultQty,
-				'tag': todate()
-			})
-
-
-
+				'price': (sellSide.bid * .99).toFixed(2),
+				'tag': todate(),
+				'strike' : sellSide.strike
+				
+			});
 
 			order.then((resp, data, xyx, hsh) => {
 
@@ -1695,11 +1843,8 @@ function placeStrangleLeg(symbol, strikeChosen) {
 			}).catch((err) => {
 				showResponse(err);
 			})
-		} else {
 
-			showErrorMsg('no price  found for ' + oType);
 		}
-
 
 	});
 
@@ -1715,15 +1860,20 @@ $(function () {
 	//null.s;
 
 	$('#sell-straddle').click(sellStraddle);
+	$('#sell-straddle-together').click(sellStraddleTogether);
 	$('#sell-starangle').click(() => { sellStrangle('C'); sellStrangle('P'); });
 	$('#strangle-call').click(() => { sellStrangle('C') });
 	$('#strangle-put').click(() => { sellStrangle('P') });
+	$('#straddle-call').click(sellCallStraddle);
+	$('#straddle-put').click(sellPutStraddle);
+	$('#URL').val(prodtradier.endpoint);
 
 	$('#get-oc').click(function (e) {
 		e.preventDefault();
 		isBuySideWanted = $('#buyHedges').is(':checked');
 
-		globalsymbol = $('#symbol').val();
+		globalsymbol = $('#symbol').val().toUpperCase();
+		$('#symbol').val(globalsymbol);
 
 		getLatestQuote();
 
@@ -1735,10 +1885,6 @@ $(function () {
 		else {
 			latest = window.setInterval(getLatestQuote, quoteRefresh);
 		}
-
-
-
-
 
 
 	})
